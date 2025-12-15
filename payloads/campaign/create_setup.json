@@ -1,0 +1,23 @@
+{
+    "CampaignDetails": {
+        "hierarchyType": "MICROPLAN",
+        "tenantId": "mz",
+        "action": "draft",
+        "parentId": null,
+        "campaignName": "Test_Campaign",
+        "resources": [],
+        "projectType": "Bednet",
+        "endDate": 1749320999000,
+        "startDate": 1748543399000,
+        "isActive": true,
+        "status": "drafted",
+        "additionalDetails": {
+            "key": 2,
+            "cycleData": {
+                "cycleData": [],
+                "cycleConfgureDate": {}
+            }
+        }
+    },
+    "RequestInfo": {}
+}

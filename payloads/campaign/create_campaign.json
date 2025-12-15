@@ -1,0 +1,136 @@
+{
+    "CampaignDetails": {
+        "hierarchyType": "MICROPLAN",
+        "tenantId": "mz",
+        "action": "create",
+        "parentId": null,
+        "campaignName": "",
+        "campaignNumber": "",
+        "deliveryRules": [
+            {
+                "id": "Bednet",
+                "code": "Bednet",
+                "name": "Bednet",
+                "group": "MALARIA",
+                "cycles": [
+                    {
+                        "id": 1,
+                        "endDate": 1775413799000,
+                        "startDate": 1774636200000,
+                        "deliveries": [
+                            {
+                                "id": 1,
+                                "doseCriteria": [
+                                    {
+                                        "condition": "MIN(CEIL(memberCount/1), 3)",
+                                        "ProductVariants": [
+                                            {
+                                                "name": "Bednet - Grade - 1",
+                                                "quantity": 1,
+                                                "productVariantId": "PVAR-2025-07-30-000139"
+                                            }
+                                        ]
+                                    }
+                                ],
+                                "deliveryStrategy": "DIRECT",
+                                "mandatoryWaitSinceLastDeliveryInDays": null
+                            }
+                        ],
+                        "mandatoryWaitSinceLastCycleInDays": null
+                    }
+                ],
+                "resources": [
+                    {
+                        "name": "Bednet - Grade - 1",
+                        "quantity": 1,
+                        "productVariantId": "PVAR-2025-07-30-000139",
+                        "isBaseUnitVariant": false
+                    }
+                ],
+                "validMaxAge": 3,
+                "validMinAge": 3,
+                "dashboardUrls": {
+                    "DISTRICT_SUPERVISOR": "/digit-ui/employee/dss/dashboard/district-health-dashboard-llin",
+                    "NATIONAL_SUPERVISOR": "/digit-ui/employee/dss/landing/national-health-dashboard-llin",
+                    "PROVINCIAL_SUPERVISOR": "/digit-ui/employee/dss/dashboard/provincial-health-dashboard-llin"
+                },
+                "taskProcedure": [
+                    "1 bednet is to be distributed per 2 household members.",
+                    "If there are 4 household members, 2 bednets should be distributed.",
+                    "If there are 5 household members, 3 bednets should be distributed."
+                ],
+                "IsCycleDisable": true,
+                "attrAddDisable": false,
+                "beneficiaryType": "HOUSEHOLD",
+                "productCountHide": true,
+                "deliveryAddDisable": true,
+                "eligibilityCriteria": [
+                    "All households are eligible.",
+                    "Prison inmates are eligible."
+                ]
+            }
+        ],
+        "boundaries": [
+            {
+                "code": "MICROPLAN_MO",
+                "name": "MICROPLAN_MO",
+                "type": "COUNTRY",
+                "isRoot": true,
+                "includeAllChildren": false
+            },
+            {
+                "code": "K20DqqbvsVqaHn8Ujshr12",
+                "name": "K20DqqbvsVqaHn8Ujshr12",
+                "type": "PROVINCE",
+                "isRoot": false,
+                "parent": "MICROPLAN_MO",
+                "includeAllChildren": false
+            },
+            {
+                "code": "DJ3GU9Se3FGyrCiL2qiyn8",
+                "name": "DJ3GU9Se3FGyrCiL2qiyn8",
+                "type": "DISTRICT",
+                "isRoot": false,
+                "parent": "K20DqqbvsVqaHn8Ujshr12",
+                "includeAllChildren": false
+            },
+            {
+                "code": "arTfax7rbLX9xpUPgyXwZe",
+                "name": "arTfax7rbLX9xpUPgyXwZe",
+                "type": "ADMINSTRATIVEPOST",
+                "isRoot": false,
+                "parent": "DJ3GU9Se3FGyrCiL2qiyn8",
+                "includeAllChildren": true
+            }
+        ],
+        "id": "",
+        "resources": [
+            {
+                "type": "facility",
+                "filename": "Bednet_december_2025-13-01_Facility Template.xlsx",
+                "filestoreId": "453a70a5-8f24-4a85-8f66-b37e633bb820"
+            },
+            {
+                "type": "boundary",
+                "filename": "Bednet_december_2025-13-01_Target Template.xlsx",
+                "filestoreId": "a63124cb-cdf6-4414-8ae3-45b78ff44116"
+            },
+            {
+                "type": "user",
+                "filename": "Bednet_december_2025-13-01_User Template.xlsx",
+                "filestoreId": "024bf364-5053-4d7b-8dc7-1a488a145775"
+            }
+        ],
+        "projectType": "Bednet",
+        "endDate": 1788028199000,
+        "startDate": 1774636200000,
+        "isActive": true,
+        "status": "drafted",
+        "additionalDetails": {
+            "beneficiaryType": "HOUSEHOLD",
+            "key": 2,
+            "cycleData": {}
+        }
+    },
+    "RequestInfo": {}
+}
