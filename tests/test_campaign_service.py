@@ -1,10 +1,10 @@
 import pytest
 import uuid
 from utils.api_client import APIClient
-from utils.data_loader import load_payload
+from utils.data_loader import load_payload, apply_dynamic_dates
 from utils.auth import get_auth_token
 from utils.request_info import get_request_info
-from utils.config import tenantId
+from utils.config import tenantId, locale
 
 
 # --- Configuration ---
@@ -50,8 +50,10 @@ def create_campaign_setup(token, client, campaign_name=None):
     Returns the campaign details from response.
     """
     payload = load_payload("campaign", "create_setup.json")
+    payload = apply_dynamic_dates(payload)
     payload["RequestInfo"] = get_campaign_request_info(token)
     payload["CampaignDetails"]["tenantId"] = tenantId
+    payload["CampaignDetails"]["locale"] = locale
 
     if campaign_name:
         payload["CampaignDetails"]["campaignName"] = campaign_name
@@ -68,12 +70,14 @@ def update_campaign_boundary(token, client, campaign_id, campaign_number, campai
     Update campaign with boundary information.
     """
     payload = load_payload("campaign", "update_boundary.json")
+    payload = apply_dynamic_dates(payload)
     payload["RequestInfo"] = get_campaign_request_info(token)
     payload["CampaignDetails"]["id"] = campaign_id
     payload["CampaignDetails"]["campaignNumber"] = campaign_number
     payload["CampaignDetails"]["campaignName"] = campaign_name
     payload["CampaignDetails"]["hierarchyType"] = hierarchy_type
     payload["CampaignDetails"]["tenantId"] = tenantId
+    payload["CampaignDetails"]["locale"] = locale
 
     url = f"{PROJECT_FACTORY_BASE}/update"
     response = client.post(url, payload)
@@ -85,12 +89,14 @@ def update_campaign_delivery(token, client, campaign_id, campaign_number, campai
     Update campaign with delivery rules.
     """
     payload = load_payload("campaign", "update_delivery.json")
+    payload = apply_dynamic_dates(payload)
     payload["RequestInfo"] = get_campaign_request_info(token)
     payload["CampaignDetails"]["id"] = campaign_id
     payload["CampaignDetails"]["campaignNumber"] = campaign_number
     payload["CampaignDetails"]["campaignName"] = campaign_name
     payload["CampaignDetails"]["hierarchyType"] = hierarchy_type
     payload["CampaignDetails"]["tenantId"] = tenantId
+    payload["CampaignDetails"]["locale"] = locale
 
     url = f"{PROJECT_FACTORY_BASE}/update"
     response = client.post(url, payload)
@@ -102,12 +108,14 @@ def update_campaign_files(token, client, campaign_id, campaign_number, campaign_
     Update campaign with resource files (user, facility, boundary).
     """
     payload = load_payload("campaign", "update_files.json")
+    payload = apply_dynamic_dates(payload)
     payload["RequestInfo"] = get_campaign_request_info(token)
     payload["CampaignDetails"]["id"] = campaign_id
     payload["CampaignDetails"]["campaignNumber"] = campaign_number
     payload["CampaignDetails"]["campaignName"] = campaign_name
     payload["CampaignDetails"]["hierarchyType"] = hierarchy_type
     payload["CampaignDetails"]["tenantId"] = tenantId
+    payload["CampaignDetails"]["locale"] = locale
 
     url = f"{PROJECT_FACTORY_BASE}/update"
     response = client.post(url, payload)
@@ -119,11 +127,13 @@ def create_campaign(token, client, campaign_id, campaign_number, campaign_name):
     Finalize and create the campaign (change action to 'create').
     """
     payload = load_payload("campaign", "create_campaign.json")
+    payload = apply_dynamic_dates(payload)
     payload["RequestInfo"] = get_campaign_request_info(token)
     payload["CampaignDetails"]["id"] = campaign_id
     payload["CampaignDetails"]["campaignNumber"] = campaign_number
     payload["CampaignDetails"]["campaignName"] = campaign_name
     payload["CampaignDetails"]["tenantId"] = tenantId
+    payload["CampaignDetails"]["locale"] = locale
 
     url = f"{PROJECT_FACTORY_BASE}/update"
     response = client.post(url, payload)

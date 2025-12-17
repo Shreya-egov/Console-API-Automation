@@ -5,6 +5,7 @@ load_dotenv(override=True)  # This forces reloading of updated values
 
 BASE_URL = os.getenv("BASE_URL")
 tenantId = os.getenv("TENANTID", "mz")
+locale = os.getenv("LOCALE", "en_MZ")
 
 search_limit = os.getenv("SEARCH_LIMIT", "100")
 search_offset = os.getenv("SEARCH_OFFSET", "0")
