@@ -16,7 +16,7 @@ A comprehensive Python-based API automation testing framework for microservices 
 - [Reporting](#reporting)
 - [Utilities Documentation](#utilities-documentation)
 - [Best Practices](#best-practices)
-- [Git Workflow](#git-workflow)
+- [Troubleshooting](#troubleshooting)
 
 ---
 
@@ -34,36 +34,28 @@ This framework is designed to test multiple microservices with a focus on:
 ## Project Structure
 
 ```
-api_automation_project/
+Console-API-Automation/
 ├── tests/                          # Test modules
-│   ├── test_individual_service.py
-│   ├── test_household_service.py
-│   ├── test_boundary_service.py
-│   ├── test_facility_service.py
-│   ├── test_product_service.py
-│   ├── test_project_service.py
-│   └── test_mdms_service.py
+│   └── test_campaign_service.py   # Campaign service E2E tests
 ├── utils/                          # Utility modules
 │   ├── api_client.py              # HTTP client wrapper
 │   ├── auth.py                    # Authentication token management
 │   ├── config.py                  # Configuration loader
-│   ├── data_loader.py             # Payload loader
+│   ├── data_loader.py             # Payload loader with dynamic dates
 │   ├── request_info.py            # Request metadata builder
 │   └── search_helpers.py          # Common search operations
 ├── payloads/                       # JSON payload templates
-│   ├── boundary/
-│   ├── facility/
-│   ├── household/
-│   ├── individual/
-│   ├── mdms/
-│   ├── product/
-│   └── project/
-├── data/                          # Test input data
-│   └── inputs.json
-├── output/                        # Test outputs
-│   ├── ids.txt                   # Generated entity IDs
-│   ├── response.json             # Latest API response
-│   └── boundaries.txt            # Boundary data
+│   └── campaign/                  # Campaign service payloads
+│       ├── create_setup.json      # Initial campaign setup
+│       ├── update_boundary.json   # Add boundary information
+│       ├── update_delivery.json   # Add delivery rules
+│       ├── update_files.json      # Add resource files
+│       ├── create_campaign.json   # Finalize campaign creation
+│       └── search_campaign.json   # Search campaigns
+├── data/                          # Test data
+│   ├── inputs.json               # Test input data
+│   └── outputs/                  # Test outputs
+│       └── campaign_ids.json     # Generated campaign IDs
 ├── reports/                       # Test reports
 │   └── report.html
 ├── .env                          # Environment configuration
@@ -171,6 +163,7 @@ BASE_URL=https://your-api-server.com
 USERNAME=your_username
 PASSWORD=your_password
 TENANTID=your_tenant
+LOCALE=en_MZ
 USERTYPE=EMPLOYEE
 CLIENT_AUTH_HEADER=Basic <base64_encoded_credentials>
 
@@ -180,9 +173,6 @@ SEARCH_OFFSET=0
 HIERARCHYTYPE=MICROPLAN
 BOUNDARY_TYPE=LOCALITY
 BOUNDARY_CODE=your_boundary_code
-SERVICE_INDIVIDUAL=individual
-SERVICE_PROJECT=project
-SERVICE_MDMS=mdms-v2
 ```
 
 ### 5. Verify Setup
@@ -203,6 +193,7 @@ pytest tests/ -v
 | `USERNAME` | API username | `LNMZ` |
 | `PASSWORD` | API password | `eGov@1234` |
 | `TENANTID` | Tenant identifier | `mz` |
+| `LOCALE` | Locale setting | `en_MZ` |
 | `USERTYPE` | User type | `EMPLOYEE` |
 | `CLIENT_AUTH_HEADER` | Basic auth header for OAuth | `Basic ZWdvdi11c2VyLWNsaWVudDo=` |
 | `SEARCH_LIMIT` | Default search limit | `200` |
@@ -210,9 +201,6 @@ pytest tests/ -v
 | `HIERARCHYTYPE` | Boundary hierarchy type | `MICROPLAN` |
 | `BOUNDARY_TYPE` | Boundary type | `LOCALITY` |
 | `BOUNDARY_CODE` | Boundary code | `MICROPLAN_MO_13_03_02_03_02_TUGLOR` |
-| `SERVICE_INDIVIDUAL` | Individual service name | `individual` |
-| `SERVICE_PROJECT` | Project service name | `project` |
-| `SERVICE_MDMS` | MDMS service name | `mdms-v2` |
 
 ### Pytest Configuration (pytest.ini)
 
@@ -229,15 +217,20 @@ This ensures the root directory is in the Python path for imports.
 
 | Service | Operations | Test File |
 |---------|-----------|-----------|
-| **Individual** | Create, Search | `test_individual_service.py` |
-| **Household** | Create Household, Create Member, Search Household, Search Member | `test_household_service.py` |
-| **Boundary** | Search with hierarchy | `test_boundary_service.py` |
-| **Facility** | Create, Search | `test_facility_service.py` |
-| **Product** | Create Product, Create Variant, Search Product, Search Variant | `test_product_service.py` |
-| **Project** | Create, Search | `test_project_service.py` |
-| **MDMS** | Search master data | `test_mdms_service.py` |
+| **Campaign** | Create Setup, Update Boundary, Update Delivery, Update Files, Create Campaign, Search | `test_campaign_service.py` |
 
-**Total: 7 Services, 16 Payload Templates**
+**Total: 1 Service, 6 Payload Templates**
+
+### Campaign Service Flow
+
+The campaign service tests follow a multi-step workflow:
+
+1. **Create Setup** - Initialize campaign with basic details
+2. **Update Boundary** - Add boundary/hierarchy information
+3. **Update Delivery** - Configure delivery rules and cycles
+4. **Update Files** - Attach resource files (users, facilities, boundaries)
+5. **Create Campaign** - Finalize and activate the campaign
+6. **Search Campaign** - Verify campaign was created successfully
 
 ---
 
@@ -251,36 +244,39 @@ Each test module follows this pattern:
 # 1. Imports
 from utils.api_client import APIClient
 from utils.auth import get_auth_token
-from utils.data_loader import load_payload
+from utils.data_loader import load_payload, apply_dynamic_dates
 from utils.request_info import get_request_info
+from utils.config import tenantId, locale
 
 # 2. Test Functions (with assertions)
-def test_create_entity():
+def test_create_campaign():
     """Test case with assertions"""
     token = get_auth_token("user")
     client = APIClient(token=token)
 
-    response = create_entity(token, client)
+    response = create_campaign_setup(token, client)
 
     # Assertions
     assert response.status_code in [200, 202], f"Failed: {response.text}"
-    entity_id = response.json()["Entity"]["id"]
-    assert entity_id, "Entity ID not generated"
+    campaign_id = response.json()["CampaignDetails"]["id"]
+    assert campaign_id, "Campaign ID not generated"
 
     # Store ID for later use
-    with open("output/ids.txt", "a") as f:
-        f.write(f"Entity ID: {entity_id}\n")
+    with open("data/outputs/campaign_ids.json", "w") as f:
+        json.dump({"campaignId": campaign_id}, f)
 
 # 3. Helper Functions (reusable, no assertions)
-def create_entity(token, client):
-    """Helper function for entity creation"""
-    payload = load_payload("service_name", "create_entity.json")
+def create_campaign_setup(token, client):
+    """Helper function for campaign creation"""
+    payload = load_payload("campaign", "create_setup.json")
+    payload = apply_dynamic_dates(payload)  # Set future dates
 
     # Inject dynamic data
-    payload["Entity"]["clientReferenceId"] = str(uuid.uuid4())
     payload["RequestInfo"] = get_request_info(token)
+    payload["CampaignDetails"]["tenantId"] = tenantId
+    payload["CampaignDetails"]["locale"] = locale
 
-    return client.post("/service/v1/_create", payload)
+    return client.post("/project-factory/v1/project-type/create", payload)
 ```
 
 ### Key Principles
@@ -314,8 +310,9 @@ def create_entity(token, client):
    ```python
    from utils.api_client import APIClient
    from utils.auth import get_auth_token
-   from utils.data_loader import load_payload
+   from utils.data_loader import load_payload, apply_dynamic_dates
    from utils.request_info import get_request_info
+   from utils.config import tenantId, locale
    import uuid
 
    def test_create_new_entity():
@@ -327,6 +324,7 @@ def create_entity(token, client):
 
    def create_new_entity(token, client):
        payload = load_payload("new_service", "create_entity.json")
+       payload = apply_dynamic_dates(payload)  # If payload has date fields
        payload["Entity"]["clientReferenceId"] = str(uuid.uuid4())
        payload["RequestInfo"] = get_request_info(token)
        return client.post("/new-service/v1/_create", payload)
@@ -346,10 +344,10 @@ source venv/bin/activate
 pytest tests/
 
 # Run specific test file
-pytest tests/test_individual_service.py
+pytest tests/test_campaign_service.py
 
 # Run specific test function
-pytest tests/test_individual_service.py::test_create_individual
+pytest tests/test_campaign_service.py::test_e2e_campaign_creation
 
 # Run with verbose output
 pytest tests/ -v
@@ -386,10 +384,10 @@ allure open allure-report
 ### Fresh Test Run (Clear Previous IDs)
 
 ```bash
-echo "=== New Test Run ===" > output/ids.txt && pytest tests/ --html=reports/report.html --self-contained-html
+rm -f data/outputs/campaign_ids.json && pytest tests/ --html=reports/report.html --self-contained-html
 ```
 
-This clears the `output/ids.txt` file before running tests, ensuring no stale IDs are used.
+This removes the previous campaign IDs file before running tests, ensuring a clean test run.
 
 ---
 
@@ -397,17 +395,10 @@ This clears the `output/ids.txt` file before running tests, ensuring no stale ID
 
 ### Output Files
 
-1. **output/ids.txt**
-   - Stores entity IDs created during test execution
-   - Format: `Entity Type ID: <id_value>`
-   - Used by subsequent tests to reference created entities
-
-2. **output/response.json**
-   - Latest API response saved for inspection
-   - Useful for debugging
-
-3. **output/boundaries.txt**
-   - Boundary hierarchy information from boundary service tests
+1. **data/outputs/campaign_ids.json**
+   - Stores campaign IDs created during test execution
+   - JSON format with `campaignId`, `campaignNumber`, `campaignName`
+   - Used to track created campaigns for verification
 
 ### Report Types
 
@@ -482,21 +473,22 @@ token = get_auth_token("user")
 Configuration module with environment variables.
 
 ```python
-from utils.config import BASE_URL, tenantId, search_params
+from utils.config import BASE_URL, tenantId, locale, search_params
 
 # Use configuration values
 url = BASE_URL
 tenant = tenantId
+loc = locale  # e.g., "en_MZ"
 params = search_params  # Contains limit, offset, tenantId
 ```
 
 **Available Variables:**
 - `BASE_URL`: API base URL
 - `tenantId`: Tenant identifier
+- `locale`: Locale setting (e.g., `en_MZ`)
 - `search_limit`, `search_offset`: Pagination settings
 - `search_params`: Dictionary with limit, offset, tenantId
 - `hierarchyType`, `boundaryCode`, `boundaryType`: Boundary configs
-- `individual`, `project`, `mdms`: Service names
 
 ### data_loader.py
 
@@ -507,7 +499,7 @@ Loads JSON payload template.
 ```python
 from utils.data_loader import load_payload
 
-payload = load_payload("individual", "create_individual.json")
+payload = load_payload("campaign", "create_setup.json")
 ```
 
 **Parameters:**
@@ -516,6 +508,33 @@ payload = load_payload("individual", "create_individual.json")
 
 **Returns:**
 - `dict`: Parsed JSON payload
+
+**Function: apply_dynamic_dates(payload)**
+
+Applies dynamic future dates to campaign payloads, preventing test failures from expired dates.
+
+```python
+from utils.data_loader import load_payload, apply_dynamic_dates
+
+payload = load_payload("campaign", "create_setup.json")
+payload = apply_dynamic_dates(payload)  # Sets dates to tomorrow -> one month later
+```
+
+**Parameters:**
+- `payload` (dict): Campaign payload dictionary
+
+**Returns:**
+- `dict`: Payload with updated date fields:
+  - `startDate`: Tomorrow at midnight (Unix timestamp ms)
+  - `endDate`: One month after tomorrow (Unix timestamp ms)
+  - Cycle dates in `deliveryRules`
+  - ISO dates in `additionalDetails.cycleData`
+
+**Helper Functions:**
+- `get_tomorrow_timestamp()`: Returns tomorrow at midnight as Unix timestamp (ms)
+- `get_one_month_later_timestamp()`: Returns one month after tomorrow as Unix timestamp (ms)
+- `get_tomorrow_iso()`: Returns tomorrow in ISO format (`YYYY-MM-DDTHH:MM:SS.000Z`)
+- `get_one_month_later_iso()`: Returns one month after tomorrow in ISO format
 
 ### request_info.py
 
@@ -535,51 +554,6 @@ payload["RequestInfo"] = request_info
 
 **Returns:**
 - `dict`: RequestInfo object with API metadata, user context, and authentication
-
-### search_helpers.py
-
-**Function: search_entity(...)**
-
-Generic search operation for entities.
-
-```python
-from utils.search_helpers import search_entity
-
-results = search_entity(
-    entity_type="Individual",
-    token=token,
-    client=client,
-    entity_id="individual_id",
-    payload_file="search_individual.json",
-    endpoint="/individual/v1/_search",
-    response_key="Individual"
-)
-```
-
-**Parameters:**
-- `entity_type` (str): Type of entity being searched
-- `token` (str): Authentication token
-- `client` (APIClient): API client instance
-- `entity_id` (str): ID to search for
-- `payload_file` (str): Payload file name
-- `endpoint` (str): API endpoint
-- `response_key` (str): Key in response containing results
-
-**Function: extract_id_from_file(label)**
-
-Extracts ID from output file.
-
-```python
-from utils.search_helpers import extract_id_from_file
-
-individual_id = extract_id_from_file("Individual ID:")
-```
-
-**Parameters:**
-- `label` (str): Label to search for in output/ids.txt
-
-**Returns:**
-- `str`: Extracted ID value
 
 ---
 
@@ -623,65 +597,6 @@ individual_id = extract_id_from_file("Individual ID:")
 
 ---
 
-## Git Workflow
-
-### Working with Branches
-
-```bash
-# Check current branch
-git status
-
-# Switch to main branch
-git checkout main
-
-# Pull latest changes
-git pull origin main
-
-# Create new feature branch
-git checkout -b feature/new-service
-
-# Make changes and commit
-git add .
-git commit -m "Add new service tests"
-
-# Push feature branch
-git push origin feature/new-service
-```
-
-### Merging Branches
-
-```bash
-# Switch to main branch
-git checkout main
-
-# Pull latest main
-git pull origin main
-
-# Merge feature branch
-git merge feature/new-service
-
-# Push merged changes
-git push origin main
-```
-
-### Merging Product Branch to Main
-
-```bash
-# Make sure you're on main
-git checkout main
-
-# Pull latest main branch from remote
-git pull origin main
-
-# Merge product branch into main
-git merge product
-
-# Push merged changes back to remote main
-git push origin main
-```
-
----
-
 ## Troubleshooting
 
 ### Common Issues
@@ -699,35 +614,12 @@ git push origin main
 3. **Test Failures**
    - Check API endpoint availability
    - Verify payload structure matches API requirements
-   - Review `output/response.json` for error details
+   - Check `data/outputs/campaign_ids.json` for created campaign details
 
-4. **Missing IDs**
-   - Ensure prerequisite tests ran successfully
-   - Check `output/ids.txt` has required IDs
-   - Run tests in correct sequence
-
----
-
-## Contributing
-
-1. Create a feature branch
-2. Make changes with clear commit messages
-3. Add tests for new functionality
-4. Update documentation
-5. Create pull request
+4. **Date-Related Failures**
+   - Campaign dates must be in the future
+   - Use `apply_dynamic_dates()` to auto-set valid dates
 
 ---
 
-## License
-
-[Add license information here]
-
----
-
-## Contact
-
-[Add contact information here]
-
----
-
-**Last Updated**: 2025-10-27
+**Last Updated**: 2025-12-17
