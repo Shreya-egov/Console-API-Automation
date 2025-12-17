@@ -1,10 +1,26 @@
 import pytest
 import uuid
+import json
+import os
 from utils.api_client import APIClient
 from utils.data_loader import load_payload, apply_dynamic_dates
 from utils.auth import get_auth_token
 from utils.request_info import get_request_info
 from utils.config import tenantId, locale
+
+
+def save_campaign_output(campaign_id, campaign_number, campaign_name):
+    """Save campaign details to output file."""
+    output_dir = os.path.join(os.path.dirname(__file__), "..", "data", "outputs")
+    os.makedirs(output_dir, exist_ok=True)
+
+    output_path = os.path.join(output_dir, "campaign_ids.json")
+    with open(output_path, "w") as f:
+        json.dump({
+            "campaignId": campaign_id,
+            "campaignNumber": campaign_number,
+            "campaignName": campaign_name
+        }, f, indent=2)
 
 
 # --- Configuration ---
@@ -395,6 +411,10 @@ class TestCampaignE2E:
 
         print(f"Campaign ID: {campaign_id}")
         print(f"Campaign Number: {campaign_number}")
+
+        # Save campaign output to file
+        save_campaign_output(campaign_id, campaign_number, campaign_name)
+        print(f"Campaign details saved to data/outputs/campaign_ids.json")
 
         # Step 2: Update boundary
         print("\n--- Step 2: Updating campaign boundary ---")
