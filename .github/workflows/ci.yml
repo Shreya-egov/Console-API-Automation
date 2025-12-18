@@ -31,17 +31,30 @@ jobs:
 
       - name: Create .env file from secrets
         run: |
+          echo "# Base URL for API" >> .env
           echo "BASE_URL=${{ secrets.BASE_URL }}" >> .env
-          echo "USERNAME=${{ secrets.API_USERNAME }}" >> .env
-          echo "PASSWORD=${{ secrets.API_PASSWORD }}" >> .env
+          echo "" >> .env
+          echo "# Tenant Configuration" >> .env
           echo "TENANTID=${{ secrets.TENANTID }}" >> .env
           echo "LOCALE=${{ secrets.LOCALE }}" >> .env
+          echo "" >> .env
+          echo "# Authentication Credentials" >> .env
+          echo "USERNAME=${{ secrets.USERNAME }}" >> .env
+          echo "PASSWORD=${{ secrets.PASSWORD }}" >> .env
+          echo "USERTYPE=${{ secrets.USERTYPE }}" >> .env
+          echo "CLIENT_AUTH_HEADER=${{ secrets.CLIENT_AUTH_HEADER }}" >> .env
+          echo "" >> .env
+          echo "# Search Configuration" >> .env
           echo "SEARCH_LIMIT=${{ secrets.SEARCH_LIMIT }}" >> .env
           echo "SEARCH_OFFSET=${{ secrets.SEARCH_OFFSET }}" >> .env
+          echo "" >> .env
+          echo "# Boundary Configuration" >> .env
           echo "HIERARCHYTYPE=${{ secrets.HIERARCHYTYPE }}" >> .env
-          echo "BOUNDARY_TYPE=${{ secrets.BOUNDARY_TYPE }}" >> .env
           echo "BOUNDARY_CODE=${{ secrets.BOUNDARY_CODE }}" >> .env
-          echo "OAUTH=${{ secrets.OAUTH }}" >> .env
+          echo "BOUNDARY_TYPE=${{ secrets.BOUNDARY_TYPE }}" >> .env
+          echo "" >> .env
+          echo "# Service Endpoints" >> .env
+          echo "SERVICE_CAMPAIGN=${{ secrets.SERVICE_CAMPAIGN }}" >> .env
 
       - name: Create output directory
         run: mkdir -p data/outputs
