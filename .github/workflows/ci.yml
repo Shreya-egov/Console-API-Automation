@@ -10,6 +10,13 @@ on:
 env:
   PYTHON_VERSION: '3.10'
 
+# Required permissions for publish-unit-test-result-action
+permissions:
+  contents: read
+  issues: read
+  checks: write
+  pull-requests: write
+
 jobs:
   test:
     runs-on: ubuntu-latest
