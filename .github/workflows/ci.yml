@@ -62,6 +62,10 @@ jobs:
           echo "" >> .env
           echo "# Service Endpoints" >> .env
           echo "SERVICE_CAMPAIGN=${{ secrets.SERVICE_CAMPAIGN }}" >> .env
+          echo "SERVICE_PROJECT=${{ secrets.SERVICE_PROJECT }}" >> .env
+          echo "SERVICE_PROJECT_FACILITY=${{ secrets.SERVICE_PROJECT_FACILITY }}" >> .env
+          echo "SERVICE_PROJECT_STAFF=${{ secrets.SERVICE_PROJECT_STAFF }}" >> .env
+          echo "SERVICE_PROJECT_FACTORY=${{ secrets.SERVICE_PROJECT_FACTORY }}" >> .env
 
       - name: Create output directory
         run: mkdir -p data/outputs
