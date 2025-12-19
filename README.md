@@ -555,7 +555,7 @@ params = search_params  # Contains limit, offset, tenantId
 **Available Variables:**
 - `BASE_URL`: API base URL
 - `tenantId`: Tenant identifier
-- `locale`: Locale setting (e.g., `en_MZ`)
+- `locale`: Locale setting (e.g., `en_IN`)
 - `search_limit`, `search_offset`: Pagination settings
 - `search_params`: Dictionary with limit, offset, tenantId
 - `hierarchyType`, `boundaryCode`, `boundaryType`: Boundary configs
@@ -690,6 +690,6 @@ payload["RequestInfo"] = request_info
    - Campaign dates must be in the future
    - Use `apply_dynamic_dates()` to auto-set valid dates
 
----
+
 
 **Last Updated**: 2025-12-19
