@@ -24,4 +24,9 @@ search_params = {
     "tenantId": tenantId
 }
 
-campaign=os.getenv("SERVICE_CAMPAIGN", "project-factory")
+# Service Endpoints
+SERVICE_CAMPAIGN = os.getenv("SERVICE_CAMPAIGN", "project-factory")
+SERVICE_PROJECT = os.getenv("SERVICE_PROJECT", "/project/v1")
+SERVICE_PROJECT_FACILITY = os.getenv("SERVICE_PROJECT_FACILITY", "/project/facility/v1")
+SERVICE_PROJECT_STAFF = os.getenv("SERVICE_PROJECT_STAFF", "/project/staff/v1")
+SERVICE_PROJECT_FACTORY = os.getenv("SERVICE_PROJECT_FACTORY", "/project-factory/v1/project-type")

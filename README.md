@@ -51,13 +51,19 @@ Console-API-Automation/
 │       ├── update_delivery.json   # Add delivery rules
 │       ├── update_files.json      # Add resource files
 │       ├── create_campaign.json   # Finalize campaign creation
-│       └── search_campaign.json   # Search campaigns
+│       ├── search_campaign.json   # Search campaigns
+│       ├── search_project.json    # Search projects by campaign
+│       ├── search_project_facility.json  # Search project facilities
+│       └── search_project_staff.json     # Search project staff
 ├── data/                          # Test data
 │   ├── inputs.json               # Test input data
 │   └── outputs/                  # Test outputs
 │       └── campaign_ids.json     # Generated campaign IDs
 ├── reports/                       # Test reports
-│   └── report.html
+│   ├── report.html               # Pytest HTML report
+│   ├── dashboard.html            # Dashboard template
+│   └── campaign_dashboard.html   # Generated campaign dashboard
+├── generate_dashboard.py         # Dashboard generator script
 ├── .env                          # Environment configuration
 ├── pytest.ini                    # Pytest configuration
 ├── requirements.txt              # Python dependencies
@@ -201,6 +207,10 @@ pytest tests/ -v
 | `HIERARCHYTYPE` | Boundary hierarchy type | `MICROPLAN` |
 | `BOUNDARY_TYPE` | Boundary type | `LOCALITY` |
 | `BOUNDARY_CODE` | Boundary code | `MICROPLAN_MO_13_03_02_03_02_TUGLOR` |
+| `SERVICE_PROJECT` | Project service endpoint | `/project/v1` |
+| `SERVICE_PROJECT_FACILITY` | Project facility endpoint | `/project/facility/v1` |
+| `SERVICE_PROJECT_STAFF` | Project staff endpoint | `/project/staff/v1` |
+| `SERVICE_PROJECT_FACTORY` | Project factory endpoint | `/project-factory/v1/project-type` |
 
 ### Pytest Configuration (pytest.ini)
 
@@ -217,9 +227,9 @@ This ensures the root directory is in the Python path for imports.
 
 | Service | Operations | Test File |
 |---------|-----------|-----------|
-| **Campaign** | Create Setup, Update Boundary, Update Delivery, Update Files, Create Campaign, Search | `test_campaign_service.py` |
+| **Campaign** | Create Setup, Update Boundary, Update Delivery, Update Files, Create Campaign, Search Campaign, Search Project, Search Facility, Search Staff | `test_campaign_service.py` |
 
-**Total: 1 Service, 6 Payload Templates**
+**Total: 1 Service, 9 Payload Templates**
 
 ### Campaign Service Flow
 
@@ -231,6 +241,9 @@ The campaign service tests follow a multi-step workflow:
 4. **Update Files** - Attach resource files (users, facilities, boundaries)
 5. **Create Campaign** - Finalize and activate the campaign
 6. **Search Campaign** - Verify campaign was created successfully
+7. **Search Project** - Find projects by campaign number (referenceID)
+8. **Search Project Facility** - Find facilities assigned to projects
+9. **Search Project Staff** - Find staff assigned to projects
 
 ---
 
@@ -396,9 +409,15 @@ This removes the previous campaign IDs file before running tests, ensuring a cle
 ### Output Files
 
 1. **data/outputs/campaign_ids.json**
-   - Stores campaign IDs created during test execution
-   - JSON format with `campaignId`, `campaignNumber`, `campaignName`
-   - Used to track created campaigns for verification
+   - Stores campaign details created during test execution
+   - JSON format with comprehensive campaign data:
+     - `campaignId`, `campaignNumber`, `campaignName`
+     - `projectTotalCount` - Total projects created
+     - `projectsByBoundaryType` - Project IDs grouped by boundary type
+     - `facilityTotalCount` - Total facilities assigned
+     - `facilityIds` - List of facility IDs
+     - `staffTotalCount` - Total staff assigned
+     - `staffIds` - List of staff IDs
 
 ### Report Types
 
@@ -412,6 +431,57 @@ This removes the previous campaign IDs file before running tests, ensuring a cle
    - Test execution trends
    - Test categorization and filtering
    - Detailed logs and attachments
+
+3. **Campaign Dashboard** (`reports/campaign_dashboard.html`)
+   - Visual dashboard showing campaign test results
+   - Displays campaign details, projects, facilities, and staff
+   - Auto-generated from test output data
+
+---
+
+## Dashboard
+
+The framework includes a visual dashboard to display campaign test results.
+
+### Generate Dashboard
+
+```bash
+# Generate dashboard from test output
+python3 generate_dashboard.py
+```
+
+### View Dashboard
+
+```bash
+# Open dashboard in default browser
+xdg-open reports/campaign_dashboard.html
+
+# Or use Python HTTP server
+cd reports && python3 -m http.server 8080
+# Then open http://localhost:8080/campaign_dashboard.html
+```
+
+### Dashboard Features
+
+The dashboard displays:
+
+| Section | Description |
+|---------|-------------|
+| **Stats Cards** | Campaign count, Projects, Facilities, Staff, Boundary Types |
+| **Campaign Details** | Campaign ID, Number, Name, Status |
+| **Projects by Boundary** | Project IDs grouped by boundary type (COUNTRY, PROVINCE, DISTRICT, etc.) |
+| **Facilities** | List of all facility IDs |
+| **Staff** | List of all staff IDs |
+
+### Regenerate After Tests
+
+```bash
+# Run tests and regenerate dashboard
+pytest tests/test_campaign_service.py -v && python3 generate_dashboard.py
+
+# Open updated dashboard
+xdg-open reports/campaign_dashboard.html
+```
 
 ---
 
@@ -622,4 +692,4 @@ payload["RequestInfo"] = request_info
 
 ---
 
-**Last Updated**: 2025-12-17
+**Last Updated**: 2025-12-19

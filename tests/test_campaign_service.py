@@ -6,25 +6,39 @@ from utils.api_client import APIClient
 from utils.data_loader import load_payload, apply_dynamic_dates
 from utils.auth import get_auth_token
 from utils.request_info import get_request_info
-from utils.config import tenantId, locale
+from utils.config import (
+    tenantId, locale,
+    SERVICE_PROJECT, SERVICE_PROJECT_FACILITY, SERVICE_PROJECT_STAFF, SERVICE_PROJECT_FACTORY
+)
 
 
-def save_campaign_output(campaign_id, campaign_number, campaign_name):
+def save_campaign_output(campaign_id, campaign_number, campaign_name, project_total_count=None, projects_by_boundary=None):
     """Save campaign details to output file."""
     output_dir = os.path.join(os.path.dirname(__file__), "..", "data", "outputs")
     os.makedirs(output_dir, exist_ok=True)
 
+    output_data = {
+        "campaignId": campaign_id,
+        "campaignNumber": campaign_number,
+        "campaignName": campaign_name
+    }
+
+    if project_total_count is not None:
+        output_data["projectTotalCount"] = project_total_count
+
+    if projects_by_boundary is not None:
+        output_data["projectsByBoundaryType"] = projects_by_boundary
+
     output_path = os.path.join(output_dir, "campaign_ids.json")
     with open(output_path, "w") as f:
-        json.dump({
-            "campaignId": campaign_id,
-            "campaignNumber": campaign_number,
-            "campaignName": campaign_name
-        }, f, indent=2)
+        json.dump(output_data, f, indent=2)
 
 
-# --- Configuration ---
-PROJECT_FACTORY_BASE = "/project-factory/v1/project-type"
+# --- Configuration (loaded from .env via config.py) ---
+PROJECT_FACTORY_BASE = SERVICE_PROJECT_FACTORY
+PROJECT_BASE = SERVICE_PROJECT
+PROJECT_FACILITY_BASE = SERVICE_PROJECT_FACILITY
+PROJECT_STAFF_BASE = SERVICE_PROJECT_STAFF
 
 
 # --- Request Info Helper for Campaign Manager ---
@@ -170,6 +184,47 @@ def search_campaign(token, client, campaign_number=None, campaign_id=None):
         payload["CampaignDetails"]["ids"] = [campaign_id]
 
     url = f"{PROJECT_FACTORY_BASE}/search"
+    response = client.post(url, payload)
+    return response
+
+
+def search_project(token, client, campaign_number):
+    """
+    Search for a project by campaign number (referenceID).
+    """
+    payload = load_payload("campaign", "search_project.json")
+    payload["RequestInfo"] = get_campaign_request_info(token)
+    payload["Projects"][0]["referenceID"] = campaign_number
+    payload["Projects"][0]["tenantId"] = tenantId
+    payload["tenantId"] = tenantId
+
+    url = f"{PROJECT_BASE}/_search?limit=100&offset=0&tenantId={tenantId}"
+    response = client.post(url, payload)
+    return response
+
+
+def search_project_facility(token, client, project_ids):
+    """
+    Search for project facilities by project IDs.
+    """
+    payload = load_payload("campaign", "search_project_facility.json")
+    payload["RequestInfo"] = get_campaign_request_info(token)
+    payload["ProjectFacility"]["projectId"] = project_ids
+
+    url = f"{PROJECT_FACILITY_BASE}/_search?tenantId={tenantId}&offset=0&limit=100"
+    response = client.post(url, payload)
+    return response
+
+
+def search_project_staff(token, client, project_ids):
+    """
+    Search for project staff by project IDs.
+    """
+    payload = load_payload("campaign", "search_project_staff.json")
+    payload["RequestInfo"] = get_campaign_request_info(token)
+    payload["ProjectStaff"]["projectId"] = project_ids
+
+    url = f"{PROJECT_STAFF_BASE}/_search?tenantId={tenantId}&offset=0&limit=100"
     response = client.post(url, payload)
     return response
 
@@ -452,12 +507,36 @@ class TestCampaignE2E:
         assert create_response.status_code == 200, f"Campaign creation failed: {create_response.text}"
         print("Campaign created successfully")
 
-        # Step 6: Search and verify
+        # Step 6: Search and verify campaign
         print("\n--- Step 6: Searching and verifying campaign ---")
         search_response = search_campaign(self.token, self.client, campaign_number=campaign_number)
         assert search_response.status_code == 200, f"Search failed: {search_response.text}"
 
         search_data = search_response.json()
         print(f"Campaign found: {campaign_number}")
+
+        # Step 7: Search project and get TotalCount and IDs by boundaryType
+        print("\n--- Step 7: Searching project by campaign number ---")
+        project_response = search_project(self.token, self.client, campaign_number)
+        assert project_response.status_code == 200, f"Project search failed: {project_response.text}"
+
+        project_data = project_response.json()
+        project_total_count = project_data.get("TotalCount", 0)
+        print(f"Project TotalCount: {project_total_count}")
+
+        # Group project IDs by boundaryType
+        projects_by_boundary = {}
+        for project in project_data.get("Project", []):
+            boundary_type = project.get("address", {}).get("boundaryType", "UNKNOWN")
+            project_id = project.get("id")
+            if boundary_type not in projects_by_boundary:
+                projects_by_boundary[boundary_type] = []
+            projects_by_boundary[boundary_type].append(project_id)
+
+        print(f"Projects grouped by boundaryType: {list(projects_by_boundary.keys())}")
+
+        # Update output file with projectTotalCount and projectsByBoundaryType
+        save_campaign_output(campaign_id, campaign_number, campaign_name, project_total_count, projects_by_boundary)
+        print(f"Campaign details updated in data/outputs/campaign_ids.json")
 
         print("\n=== Campaign E2E Test Completed Successfully ===")

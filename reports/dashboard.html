@@ -1,0 +1,340 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Campaign Test Dashboard</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #1a1a2e 0%, #16213e 100%);
+            min-height: 100vh;
+            padding: 20px;
+            color: #fff;
+        }
+        .container {
+            max-width: 1400px;
+            margin: 0 auto;
+        }
+        h1 {
+            text-align: center;
+            margin-bottom: 30px;
+            font-size: 2.5em;
+            color: #00d9ff;
+            text-shadow: 0 0 20px rgba(0, 217, 255, 0.3);
+        }
+        .timestamp {
+            text-align: center;
+            color: #888;
+            margin-bottom: 30px;
+            font-size: 0.9em;
+        }
+        .stats-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+            gap: 20px;
+            margin-bottom: 30px;
+        }
+        .stat-card {
+            background: rgba(255, 255, 255, 0.1);
+            border-radius: 15px;
+            padding: 25px;
+            text-align: center;
+            backdrop-filter: blur(10px);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            transition: transform 0.3s, box-shadow 0.3s;
+        }
+        .stat-card:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 10px 30px rgba(0, 217, 255, 0.2);
+        }
+        .stat-value {
+            font-size: 3em;
+            font-weight: bold;
+            margin-bottom: 10px;
+        }
+        .stat-label {
+            color: #aaa;
+            font-size: 1.1em;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+        }
+        .stat-card.campaign .stat-value { color: #00d9ff; }
+        .stat-card.projects .stat-value { color: #00ff88; }
+        .stat-card.facilities .stat-value { color: #ff6b6b; }
+        .stat-card.staff .stat-value { color: #a855f7; }
+        .stat-card.boundaries .stat-value { color: #ffd93d; }
+
+        .section {
+            background: rgba(255, 255, 255, 0.05);
+            border-radius: 15px;
+            padding: 25px;
+            margin-bottom: 25px;
+            border: 1px solid rgba(255, 255, 255, 0.1);
+        }
+        .section h2 {
+            color: #00d9ff;
+            margin-bottom: 20px;
+            font-size: 1.5em;
+            border-bottom: 2px solid rgba(0, 217, 255, 0.3);
+            padding-bottom: 10px;
+        }
+        .info-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+            gap: 15px;
+        }
+        .info-item {
+            background: rgba(0, 0, 0, 0.2);
+            padding: 15px;
+            border-radius: 10px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+        .info-label {
+            color: #888;
+            font-weight: 500;
+        }
+        .info-value {
+            color: #00d9ff;
+            font-family: 'Courier New', monospace;
+            font-size: 0.9em;
+            word-break: break-all;
+            text-align: right;
+            max-width: 60%;
+        }
+
+        .boundary-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 15px;
+        }
+        .boundary-card {
+            background: rgba(0, 0, 0, 0.3);
+            border-radius: 10px;
+            padding: 20px;
+            text-align: center;
+        }
+        .boundary-type {
+            color: #ffd93d;
+            font-weight: bold;
+            margin-bottom: 10px;
+            font-size: 0.9em;
+            text-transform: uppercase;
+        }
+        .boundary-count {
+            font-size: 2em;
+            color: #00ff88;
+            margin-bottom: 10px;
+        }
+        .boundary-ids {
+            font-size: 0.7em;
+            color: #666;
+            font-family: 'Courier New', monospace;
+            max-height: 80px;
+            overflow-y: auto;
+            text-align: left;
+            padding: 10px;
+            background: rgba(0, 0, 0, 0.3);
+            border-radius: 5px;
+        }
+        .boundary-ids div {
+            padding: 2px 0;
+            border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+        }
+
+        .facility-list {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+            gap: 10px;
+        }
+        .facility-item {
+            background: rgba(255, 107, 107, 0.1);
+            padding: 12px 15px;
+            border-radius: 8px;
+            font-family: 'Courier New', monospace;
+            font-size: 0.9em;
+            color: #ff6b6b;
+            border-left: 3px solid #ff6b6b;
+        }
+
+        .staff-list {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+            gap: 10px;
+        }
+        .staff-item {
+            background: rgba(168, 85, 247, 0.1);
+            padding: 12px 15px;
+            border-radius: 8px;
+            font-family: 'Courier New', monospace;
+            font-size: 0.9em;
+            color: #a855f7;
+            border-left: 3px solid #a855f7;
+        }
+
+        .status-badge {
+            display: inline-block;
+            padding: 5px 15px;
+            border-radius: 20px;
+            font-size: 0.85em;
+            font-weight: bold;
+            text-transform: uppercase;
+        }
+        .status-success {
+            background: rgba(0, 255, 136, 0.2);
+            color: #00ff88;
+        }
+
+        footer {
+            text-align: center;
+            margin-top: 40px;
+            padding: 20px;
+            color: #666;
+            font-size: 0.9em;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>Campaign Test Dashboard</h1>
+        <p class="timestamp">Generated: <span id="timestamp"></span></p>
+
+        <div class="stats-grid">
+            <div class="stat-card campaign">
+                <div class="stat-value">1</div>
+                <div class="stat-label">Campaign Created</div>
+            </div>
+            <div class="stat-card projects">
+                <div class="stat-value" id="projectCount">0</div>
+                <div class="stat-label">Total Projects</div>
+            </div>
+            <div class="stat-card facilities">
+                <div class="stat-value" id="facilityCount">0</div>
+                <div class="stat-label">Total Facilities</div>
+            </div>
+            <div class="stat-card staff">
+                <div class="stat-value" id="staffCount">0</div>
+                <div class="stat-label">Total Staff</div>
+            </div>
+            <div class="stat-card boundaries">
+                <div class="stat-value" id="boundaryCount">0</div>
+                <div class="stat-label">Boundary Types</div>
+            </div>
+        </div>
+
+        <div class="section">
+            <h2>Campaign Details</h2>
+            <div class="info-grid">
+                <div class="info-item">
+                    <span class="info-label">Campaign ID</span>
+                    <span class="info-value" id="campaignId">-</span>
+                </div>
+                <div class="info-item">
+                    <span class="info-label">Campaign Number</span>
+                    <span class="info-value" id="campaignNumber">-</span>
+                </div>
+                <div class="info-item">
+                    <span class="info-label">Campaign Name</span>
+                    <span class="info-value" id="campaignName">-</span>
+                </div>
+                <div class="info-item">
+                    <span class="info-label">Status</span>
+                    <span class="info-value"><span class="status-badge status-success">Created</span></span>
+                </div>
+            </div>
+        </div>
+
+        <div class="section">
+            <h2>Projects by Boundary Type</h2>
+            <div class="boundary-grid" id="boundaryGrid"></div>
+        </div>
+
+        <div class="section">
+            <h2>Facilities</h2>
+            <div class="facility-list" id="facilityList"></div>
+        </div>
+
+        <div class="section">
+            <h2>Staff</h2>
+            <div class="staff-list" id="staffList"></div>
+        </div>
+
+        <footer>
+            Console API Automation - Campaign Test Results
+        </footer>
+    </div>
+
+    <script>
+        // Campaign data will be injected here
+        const campaignData = CAMPAIGN_DATA_PLACEHOLDER;
+
+        // Update timestamp
+        document.getElementById('timestamp').textContent = new Date().toLocaleString();
+
+        // Update stats
+        document.getElementById('projectCount').textContent = campaignData.projectTotalCount || 0;
+        document.getElementById('facilityCount').textContent = campaignData.facilityTotalCount || 0;
+        document.getElementById('staffCount').textContent = campaignData.staffTotalCount || 0;
+        document.getElementById('boundaryCount').textContent = Object.keys(campaignData.projectsByBoundaryType || {}).length;
+
+        // Update campaign details
+        document.getElementById('campaignId').textContent = campaignData.campaignId || '-';
+        document.getElementById('campaignNumber').textContent = campaignData.campaignNumber || '-';
+        document.getElementById('campaignName').textContent = campaignData.campaignName || '-';
+
+        // Render boundary types
+        const boundaryGrid = document.getElementById('boundaryGrid');
+        const boundaries = campaignData.projectsByBoundaryType || {};
+
+        for (const [type, ids] of Object.entries(boundaries)) {
+            const card = document.createElement('div');
+            card.className = 'boundary-card';
+            card.innerHTML = `
+                <div class="boundary-type">${type}</div>
+                <div class="boundary-count">${ids.length}</div>
+                <div class="boundary-ids">
+                    ${ids.map(id => `<div>${id.substring(0, 8)}...</div>`).join('')}
+                </div>
+            `;
+            boundaryGrid.appendChild(card);
+        }
+
+        // Render facilities
+        const facilityList = document.getElementById('facilityList');
+        const facilities = campaignData.facilityIds || [];
+
+        if (facilities.length === 0) {
+            facilityList.innerHTML = '<div style="color: #666; padding: 20px;">No facilities found</div>';
+        } else {
+            facilities.forEach(id => {
+                const item = document.createElement('div');
+                item.className = 'facility-item';
+                item.textContent = id;
+                facilityList.appendChild(item);
+            });
+        }
+
+        // Render staff
+        const staffList = document.getElementById('staffList');
+        const staffMembers = campaignData.staffIds || [];
+
+        if (staffMembers.length === 0) {
+            staffList.innerHTML = '<div style="color: #666; padding: 20px;">No staff found</div>';
+        } else {
+            staffMembers.forEach(id => {
+                const item = document.createElement('div');
+                item.className = 'staff-item';
+                item.textContent = id;
+                staffList.appendChild(item);
+            });
+        }
+    </script>
+</body>
+</html>
