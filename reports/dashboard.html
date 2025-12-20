@@ -282,9 +282,9 @@
         document.getElementById('timestamp').textContent = new Date().toLocaleString();
 
         // Update stats
-        document.getElementById('projectCount').textContent = campaignData.projectTotalCount || 0;
-        document.getElementById('facilityCount').textContent = campaignData.facilityTotalCount || 0;
-        document.getElementById('staffCount').textContent = campaignData.staffTotalCount || 0;
+        document.getElementById('projectCount').textContent = campaignData.totalCount || 0;
+        document.getElementById('facilityCount').textContent = campaignData.facilityCount || 0;
+        document.getElementById('staffCount').textContent = campaignData.staffCount || 0;
         document.getElementById('boundaryCount').textContent = Object.keys(campaignData.projectsByBoundaryType || {}).length;
 
         // Update campaign details

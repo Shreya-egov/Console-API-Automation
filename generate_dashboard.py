@@ -40,8 +40,9 @@ def generate_dashboard():
     print(f"\nCampaign Summary:")
     print(f"  - Campaign Number: {campaign_data.get('campaignNumber', 'N/A')}")
     print(f"  - Campaign Name: {campaign_data.get('campaignName', 'N/A')}")
-    print(f"  - Total Projects: {campaign_data.get('projectTotalCount', 0)}")
-    print(f"  - Total Facilities: {campaign_data.get('facilityTotalCount', 0)}")
+    print(f"  - Total Projects: {campaign_data.get('totalCount', 0)}")
+    print(f"  - Total Facilities: {campaign_data.get('facilityCount', 0)}")
+    print(f"  - Total Staff: {campaign_data.get('staffCount', 0)}")
     print(f"  - Boundary Types: {len(campaign_data.get('projectsByBoundaryType', {}))}")
 
     return dashboard_path

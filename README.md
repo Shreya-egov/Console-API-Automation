@@ -437,11 +437,11 @@ This removes the previous campaign IDs file before running tests, ensuring a cle
    - Stores campaign details created during test execution
    - JSON format with comprehensive campaign data:
      - `campaignId`, `campaignNumber`, `campaignName`
-     - `projectTotalCount` - Total projects created
+     - `totalCount` - Total projects created
      - `projectsByBoundaryType` - Project IDs grouped by boundary type
-     - `facilityTotalCount` - Total facilities assigned
+     - `facilityCount` - Total facilities assigned
      - `facilityIds` - List of facility IDs
-     - `staffTotalCount` - Total staff assigned
+     - `staffCount` - Total staff assigned
      - `staffIds` - List of staff IDs
 
 ### Report Types

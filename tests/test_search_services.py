@@ -61,6 +61,13 @@ def load_campaign_ids():
     return None
 
 
+def save_campaign_ids(data):
+    """Save campaign data to the output file."""
+    output_path = os.path.join(os.path.dirname(__file__), "..", "data", "outputs", "campaign_ids.json")
+    with open(output_path, "w") as f:
+        json.dump(data, f, indent=2)
+
+
 def search_campaign(token, client, campaign_number=None, campaign_id=None):
     """Search for a campaign by campaign number or ID."""
     payload = load_payload("campaign", "search_campaign.json")
@@ -684,6 +691,13 @@ class TestSearchServicesE2E:
         for boundary_type, ids in projects_by_boundary.items():
             print(f"  {boundary_type}: {len(ids)} project(s)")
 
+        # Save project data to output file
+        updated_data = self.campaign_data.copy()
+        updated_data["totalCount"] = total_count
+        updated_data["projectsByBoundaryType"] = projects_by_boundary
+        save_campaign_ids(updated_data)
+        print(f"Saved TotalCount ({total_count}) and projectsByBoundaryType to campaign_ids.json")
+
         # Step 3: Search Facilities
         print(f"\n=== Step 3: Searching Project Facilities ===")
         facility_response = search_project_facility(self.token, self.client, project_ids)
@@ -693,6 +707,9 @@ class TestSearchServicesE2E:
         facilities = facility_data.get("ProjectFacilities", [])
         print(f"Found {len(facilities)} facility mapping(s)")
 
+        # Extract facility IDs
+        facility_ids = [f.get("id") for f in facilities if f.get("id")]
+
         # Step 4: Search Staff
         print(f"\n=== Step 4: Searching Project Staff ===")
         staff_response = search_project_staff(self.token, self.client, project_ids)
@@ -701,6 +718,18 @@ class TestSearchServicesE2E:
         staff_data = staff_response.json()
         staff = staff_data.get("ProjectStaff", [])
         print(f"Found {len(staff)} staff assignment(s)")
+
+        # Extract staff IDs
+        staff_ids = [s.get("id") for s in staff if s.get("id")]
+
+        # Save facility and staff data to output file
+        updated_data = load_campaign_ids()
+        updated_data["facilityCount"] = len(facilities)
+        updated_data["facilityIds"] = facility_ids
+        updated_data["staffCount"] = len(staff)
+        updated_data["staffIds"] = staff_ids
+        save_campaign_ids(updated_data)
+        print(f"Saved facility count ({len(facilities)}) and staff count ({len(staff)}) to campaign_ids.json")
 
         print(f"\n=== Search Flow Completed Successfully ===")
         print(f"Summary:")
