@@ -36,7 +36,8 @@ This framework is designed to test multiple microservices with a focus on:
 ```
 Console-API-Automation/
 ├── tests/                          # Test modules
-│   └── test_campaign_service.py   # Campaign service E2E tests
+│   ├── test_campaign_service.py   # Campaign service E2E tests
+│   └── test_search_services.py    # Search API tests (Campaign, Project, Facility, Staff)
 ├── utils/                          # Utility modules
 │   ├── api_client.py              # HTTP client wrapper
 │   ├── auth.py                    # Authentication token management
@@ -227,9 +228,27 @@ This ensures the root directory is in the Python path for imports.
 
 | Service | Operations | Test File |
 |---------|-----------|-----------|
-| **Campaign** | Create Setup, Update Boundary, Update Delivery, Update Files, Create Campaign, Search Campaign, Search Project, Search Facility, Search Staff | `test_campaign_service.py` |
+| **Campaign** | Create Setup, Update Boundary, Update Delivery, Update Files, Create Campaign | `test_campaign_service.py` |
+| **Search Services** | Search Campaign, Search Project, Search Project Facility, Search Project Staff | `test_search_services.py` |
 
-**Total: 1 Service, 9 Payload Templates**
+**Total: 2 Test Files, 9 Payload Templates**
+
+### Test Classes
+
+#### test_campaign_service.py
+- `TestCampaignSetup` - Campaign setup creation tests
+- `TestCampaignBoundary` - Campaign boundary update tests
+- `TestCampaignDelivery` - Campaign delivery rules tests
+- `TestCampaignCreate` - Campaign finalization tests
+- `TestCampaignSearch` - Basic campaign search tests
+- `TestCampaignE2E` - End-to-end campaign workflow
+
+#### test_search_services.py
+- `TestCampaignSearchService` - Campaign search API tests (4 tests)
+- `TestProjectSearchService` - Project search API tests (5 tests)
+- `TestProjectFacilitySearchService` - Project facility search tests (5 tests)
+- `TestProjectStaffSearchService` - Project staff search tests (5 tests)
+- `TestSearchServicesE2E` - End-to-end search flow test
 
 ### Campaign Service Flow
 
@@ -358,9 +377,15 @@ pytest tests/
 
 # Run specific test file
 pytest tests/test_campaign_service.py
+pytest tests/test_search_services.py
+
+# Run specific test class
+pytest tests/test_search_services.py::TestProjectSearchService -v
+pytest tests/test_search_services.py::TestProjectFacilitySearchService -v
 
 # Run specific test function
-pytest tests/test_campaign_service.py::test_e2e_campaign_creation
+pytest tests/test_campaign_service.py::TestCampaignE2E::test_complete_campaign_workflow
+pytest tests/test_search_services.py::TestSearchServicesE2E::test_complete_search_flow
 
 # Run with verbose output
 pytest tests/ -v
@@ -692,4 +717,4 @@ payload["RequestInfo"] = request_info
 
 
 
-**Last Updated**: 2025-12-19
+**Last Updated**: 2025-12-20

@@ -2,6 +2,7 @@ import pytest
 import uuid
 import json
 import os
+import time
 from utils.api_client import APIClient
 from utils.data_loader import load_payload, apply_dynamic_dates
 from utils.auth import get_auth_token
@@ -12,7 +13,8 @@ from utils.config import (
 )
 
 
-def save_campaign_output(campaign_id, campaign_number, campaign_name, project_total_count=None, projects_by_boundary=None):
+def save_campaign_output(campaign_id, campaign_number, campaign_name, project_total_count=None,
+                         projects_by_boundary=None, facility_ids=None, staff_ids=None):
     """Save campaign details to output file."""
     output_dir = os.path.join(os.path.dirname(__file__), "..", "data", "outputs")
     os.makedirs(output_dir, exist_ok=True)
@@ -28,6 +30,14 @@ def save_campaign_output(campaign_id, campaign_number, campaign_name, project_to
 
     if projects_by_boundary is not None:
         output_data["projectsByBoundaryType"] = projects_by_boundary
+
+    if facility_ids is not None:
+        output_data["facilityTotalCount"] = len(facility_ids)
+        output_data["facilityIds"] = facility_ids
+
+    if staff_ids is not None:
+        output_data["staffTotalCount"] = len(staff_ids)
+        output_data["staffIds"] = staff_ids
 
     output_path = os.path.join(output_dir, "campaign_ids.json")
     with open(output_path, "w") as f:
@@ -229,6 +239,149 @@ def search_project_staff(token, client, project_ids):
     return response
 
 
+# --- Retry/Polling Configuration ---
+SEARCH_RETRY_MAX_ATTEMPTS = 30  # Maximum number of retry attempts
+SEARCH_RETRY_DELAY_SECONDS = 2  # Delay between retries in seconds
+SEARCH_RETRY_TIMEOUT_SECONDS = 60  # Total timeout for search polling
+
+
+def wait_for_campaign_search(token, client, campaign_number=None, campaign_id=None,
+                              max_attempts=SEARCH_RETRY_MAX_ATTEMPTS,
+                              delay=SEARCH_RETRY_DELAY_SECONDS):
+    """
+    Poll for campaign search results until found or timeout.
+
+    Args:
+        token: Auth token
+        client: API client
+        campaign_number: Campaign number to search for
+        campaign_id: Campaign ID to search for
+        max_attempts: Maximum number of retry attempts
+        delay: Delay between retries in seconds
+
+    Returns:
+        tuple: (response, found) where found is True if campaign was found
+    """
+    for attempt in range(1, max_attempts + 1):
+        response = search_campaign(token, client, campaign_number=campaign_number, campaign_id=campaign_id)
+
+        if response.status_code == 200:
+            data = response.json()
+            campaigns = data.get("CampaignDetails", [])
+
+            # Check if campaign is found
+            if isinstance(campaigns, list) and len(campaigns) > 0:
+                # Verify the campaign we're looking for is in results
+                if campaign_number:
+                    if any(c.get("campaignNumber") == campaign_number for c in campaigns):
+                        print(f"Campaign found after {attempt} attempt(s)")
+                        return response, True
+                elif campaign_id:
+                    if any(c.get("id") == campaign_id for c in campaigns):
+                        print(f"Campaign found after {attempt} attempt(s)")
+                        return response, True
+                else:
+                    print(f"Campaign found after {attempt} attempt(s)")
+                    return response, True
+            elif isinstance(campaigns, dict) and campaigns:
+                # Single campaign response
+                if campaign_number and campaigns.get("campaignNumber") == campaign_number:
+                    print(f"Campaign found after {attempt} attempt(s)")
+                    return response, True
+                elif campaign_id and campaigns.get("id") == campaign_id:
+                    print(f"Campaign found after {attempt} attempt(s)")
+                    return response, True
+                elif not campaign_number and not campaign_id:
+                    print(f"Campaign found after {attempt} attempt(s)")
+                    return response, True
+
+        if attempt < max_attempts:
+            print(f"Campaign not found yet, retrying... (attempt {attempt}/{max_attempts})")
+            time.sleep(delay)
+
+    print(f"Campaign not found after {max_attempts} attempts")
+    return response, False
+
+
+def wait_for_campaign_status(token, client, campaign_number, target_status="created",
+                              max_attempts=SEARCH_RETRY_MAX_ATTEMPTS,
+                              delay=SEARCH_RETRY_DELAY_SECONDS):
+    """
+    Poll for campaign status until it reaches the target status.
+
+    Args:
+        token: Auth token
+        client: API client
+        campaign_number: Campaign number to search for
+        target_status: Status to wait for (default: "created")
+        max_attempts: Maximum number of retry attempts
+        delay: Delay between retries in seconds
+
+    Returns:
+        tuple: (response, status_reached) where status_reached is True if target status was reached
+    """
+    for attempt in range(1, max_attempts + 1):
+        response = search_campaign(token, client, campaign_number=campaign_number)
+
+        if response.status_code == 200:
+            data = response.json()
+            campaigns = data.get("CampaignDetails", [])
+
+            if isinstance(campaigns, list) and len(campaigns) > 0:
+                campaign = next((c for c in campaigns if c.get("campaignNumber") == campaign_number), None)
+                if campaign:
+                    current_status = campaign.get("status")
+                    print(f"Attempt {attempt}: Campaign status = {current_status}")
+                    if current_status == target_status:
+                        print(f"Campaign reached status '{target_status}' after {attempt} attempt(s)")
+                        return response, True
+
+        if attempt < max_attempts:
+            print(f"Waiting for status '{target_status}'... (attempt {attempt}/{max_attempts})")
+            time.sleep(delay)
+
+    print(f"Campaign did not reach status '{target_status}' after {max_attempts} attempts")
+    return response, False
+
+
+def wait_for_project_search(token, client, campaign_number,
+                             max_attempts=SEARCH_RETRY_MAX_ATTEMPTS,
+                             delay=SEARCH_RETRY_DELAY_SECONDS,
+                             min_projects=1):
+    """
+    Poll for project search results until projects are found or timeout.
+
+    Args:
+        token: Auth token
+        client: API client
+        campaign_number: Campaign number (referenceID) to search for
+        max_attempts: Maximum number of retry attempts
+        delay: Delay between retries in seconds
+        min_projects: Minimum number of projects expected
+
+    Returns:
+        tuple: (response, found) where found is True if projects were found
+    """
+    for attempt in range(1, max_attempts + 1):
+        response = search_project(token, client, campaign_number)
+
+        if response.status_code == 200:
+            data = response.json()
+            total_count = data.get("TotalCount", 0)
+            projects = data.get("Project", [])
+
+            if total_count >= min_projects or len(projects) >= min_projects:
+                print(f"Projects found after {attempt} attempt(s): TotalCount={total_count}")
+                return response, True
+
+        if attempt < max_attempts:
+            print(f"Projects not found yet, retrying... (attempt {attempt}/{max_attempts})")
+            time.sleep(delay)
+
+    print(f"Projects not found after {max_attempts} attempts")
+    return response, False
+
+
 # --- Test Cases ---
 
 class TestCampaignSetup:
@@ -409,9 +562,13 @@ class TestCampaignSearch:
 
         campaign_number = setup_response.json()["CampaignDetails"]["campaignNumber"]
 
-        # Search for the campaign
-        response = search_campaign(self.token, self.client, campaign_number=campaign_number)
+        # Search for the campaign with polling (wait until found)
+        print(f"\nWaiting for campaign {campaign_number} to be searchable...")
+        response, found = wait_for_campaign_search(
+            self.token, self.client, campaign_number=campaign_number
+        )
 
+        assert found, f"Campaign {campaign_number} not found after polling: {response.text}"
         assert response.status_code == 200, f"Failed to search campaign: {response.text}"
 
         data = response.json()
@@ -467,10 +624,6 @@ class TestCampaignE2E:
         print(f"Campaign ID: {campaign_id}")
         print(f"Campaign Number: {campaign_number}")
 
-        # Save campaign output to file
-        save_campaign_output(campaign_id, campaign_number, campaign_name)
-        print(f"Campaign details saved to data/outputs/campaign_ids.json")
-
         # Step 2: Update boundary
         print("\n--- Step 2: Updating campaign boundary ---")
         boundary_response = update_campaign_boundary(
@@ -507,22 +660,34 @@ class TestCampaignE2E:
         assert create_response.status_code == 200, f"Campaign creation failed: {create_response.text}"
         print("Campaign created successfully")
 
-        # Step 6: Search and verify campaign
-        print("\n--- Step 6: Searching and verifying campaign ---")
-        search_response = search_campaign(self.token, self.client, campaign_number=campaign_number)
+        # Step 6: Wait for campaign status to become "created"
+        print("\n--- Step 6: Waiting for campaign status 'created' ---")
+        print(f"Polling campaign {campaign_number} until status is 'created'...")
+        search_response, status_reached = wait_for_campaign_status(
+            self.token, self.client, campaign_number=campaign_number, target_status="created",
+            max_attempts=60, delay=5  # Wait up to 5 minutes (60 * 5 seconds)
+        )
+        assert status_reached, f"Campaign {campaign_number} did not reach 'created' status: {search_response.text}"
         assert search_response.status_code == 200, f"Search failed: {search_response.text}"
 
-        search_data = search_response.json()
-        print(f"Campaign found: {campaign_number}")
+        print(f"Campaign {campaign_number} is now fully created")
 
-        # Step 7: Search project and get TotalCount and IDs by boundaryType
+        # Step 7: Search project and get TotalCount and IDs by boundaryType (with polling)
         print("\n--- Step 7: Searching project by campaign number ---")
-        project_response = search_project(self.token, self.client, campaign_number)
+        print(f"Waiting for projects to be available for campaign {campaign_number}...")
+        project_response, projects_found = wait_for_project_search(
+            self.token, self.client, campaign_number,
+            max_attempts=10,  # Reduced attempts for project search
+            delay=3  # Slightly longer delay between retries
+        )
         assert project_response.status_code == 200, f"Project search failed: {project_response.text}"
 
         project_data = project_response.json()
         project_total_count = project_data.get("TotalCount", 0)
         print(f"Project TotalCount: {project_total_count}")
+
+        if not projects_found:
+            print(f"Note: No projects created yet for campaign {campaign_number} (this may be expected for newly created campaigns)")
 
         # Group project IDs by boundaryType
         projects_by_boundary = {}
@@ -535,8 +700,42 @@ class TestCampaignE2E:
 
         print(f"Projects grouped by boundaryType: {list(projects_by_boundary.keys())}")
 
-        # Update output file with projectTotalCount and projectsByBoundaryType
-        save_campaign_output(campaign_id, campaign_number, campaign_name, project_total_count, projects_by_boundary)
-        print(f"Campaign details updated in data/outputs/campaign_ids.json")
+        # Get all project IDs for facility and staff search
+        project_ids = [p.get("id") for p in project_data.get("Project", [])]
+
+        # Step 8: Search facilities by project IDs
+        print("\n--- Step 8: Searching project facilities ---")
+        facility_ids = []
+        if project_ids:
+            facility_response = search_project_facility(self.token, self.client, project_ids)
+            if facility_response.status_code == 200:
+                facility_data = facility_response.json()
+                facilities = facility_data.get("ProjectFacilities", [])
+                facility_ids = [f.get("facilityId") for f in facilities if f.get("facilityId")]
+                print(f"Facility TotalCount: {len(facility_ids)}")
+            else:
+                print(f"Facility search failed: {facility_response.status_code}")
+        else:
+            print("No project IDs available for facility search")
+
+        # Step 9: Search staff by project IDs
+        print("\n--- Step 9: Searching project staff ---")
+        staff_ids = []
+        if project_ids:
+            staff_response = search_project_staff(self.token, self.client, project_ids)
+            if staff_response.status_code == 200:
+                staff_data = staff_response.json()
+                staff_list = staff_data.get("ProjectStaff", [])
+                staff_ids = [s.get("userId") for s in staff_list if s.get("userId")]
+                print(f"Staff TotalCount: {len(staff_ids)}")
+            else:
+                print(f"Staff search failed: {staff_response.status_code}")
+        else:
+            print("No project IDs available for staff search")
+
+        # Update output file with all IDs
+        save_campaign_output(campaign_id, campaign_number, campaign_name, project_total_count,
+                           projects_by_boundary, facility_ids, staff_ids)
+        print(f"\nCampaign details saved to data/outputs/campaign_ids.json")
 
         print("\n=== Campaign E2E Test Completed Successfully ===")
