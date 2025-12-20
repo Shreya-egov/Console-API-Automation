@@ -2,6 +2,7 @@ import pytest
 import uuid
 import json
 import os
+import time
 from utils.api_client import APIClient
 from utils.data_loader import load_payload, apply_dynamic_dates
 from utils.auth import get_auth_token
@@ -155,6 +156,70 @@ def create_campaign(token, client, campaign_id, campaign_number, campaign_name):
     url = f"{PROJECT_FACTORY_BASE}/update"
     response = client.post(url, payload)
     return response
+
+
+def search_campaign(token, client, campaign_number=None, campaign_id=None):
+    """
+    Search for a campaign by campaign number or ID.
+    """
+    payload = load_payload("campaign", "search_campaign.json")
+    payload["RequestInfo"] = get_campaign_request_info(token)
+    payload["CampaignDetails"]["tenantId"] = tenantId
+
+    if campaign_number:
+        payload["CampaignDetails"]["campaignNumber"] = campaign_number
+    if campaign_id:
+        payload["CampaignDetails"]["ids"] = [campaign_id]
+
+    url = f"{PROJECT_FACTORY_BASE}/search"
+    response = client.post(url, payload)
+    return response
+
+
+# --- Retry/Polling Configuration ---
+SEARCH_RETRY_MAX_ATTEMPTS = 30
+SEARCH_RETRY_DELAY_SECONDS = 2
+
+
+def wait_for_campaign_status(token, client, campaign_number, target_status="created",
+                              max_attempts=SEARCH_RETRY_MAX_ATTEMPTS,
+                              delay=SEARCH_RETRY_DELAY_SECONDS):
+    """
+    Poll for campaign status until it reaches the target status.
+
+    Args:
+        token: Auth token
+        client: API client
+        campaign_number: Campaign number to search for
+        target_status: Status to wait for (default: "created")
+        max_attempts: Maximum number of retry attempts
+        delay: Delay between retries in seconds
+
+    Returns:
+        tuple: (response, status_reached) where status_reached is True if target status was reached
+    """
+    for attempt in range(1, max_attempts + 1):
+        response = search_campaign(token, client, campaign_number=campaign_number)
+
+        if response.status_code == 200:
+            data = response.json()
+            campaigns = data.get("CampaignDetails", [])
+
+            if isinstance(campaigns, list) and len(campaigns) > 0:
+                campaign = next((c for c in campaigns if c.get("campaignNumber") == campaign_number), None)
+                if campaign:
+                    current_status = campaign.get("status")
+                    print(f"Attempt {attempt}: Campaign status = {current_status}")
+                    if current_status == target_status:
+                        print(f"Campaign reached status '{target_status}' after {attempt} attempt(s)")
+                        return response, True
+
+        if attempt < max_attempts:
+            print(f"Waiting for status '{target_status}'... (attempt {attempt}/{max_attempts})")
+            time.sleep(delay)
+
+    print(f"Campaign did not reach status '{target_status}' after {max_attempts} attempts")
+    return response, False
 
 
 # --- Test Cases ---
@@ -339,6 +404,7 @@ class TestCampaignE2E:
         3. Update delivery
         4. Update files
         5. Create campaign
+        6. Wait for status 'created'
         """
         campaign_name = f"E2E_Test_Campaign_{uuid.uuid4().hex[:8]}"
 
@@ -390,6 +456,18 @@ class TestCampaignE2E:
         )
         assert create_response.status_code == 200, f"Campaign creation failed: {create_response.text}"
         print("Campaign created successfully")
+
+        # Step 6: Wait for campaign status to become "created"
+        print("\n--- Step 6: Waiting for campaign status 'created' ---")
+        print(f"Polling campaign {campaign_number} until status is 'created'...")
+        search_response, status_reached = wait_for_campaign_status(
+            self.token, self.client, campaign_number=campaign_number, target_status="created",
+            max_attempts=60, delay=5  # Wait up to 5 minutes (60 * 5 seconds)
+        )
+        assert status_reached, f"Campaign {campaign_number} did not reach 'created' status: {search_response.text}"
+        assert search_response.status_code == 200, f"Search failed: {search_response.text}"
+
+        print(f"Campaign {campaign_number} is now fully created")
 
         # Save campaign output
         save_campaign_output(campaign_id, campaign_number, campaign_name)
