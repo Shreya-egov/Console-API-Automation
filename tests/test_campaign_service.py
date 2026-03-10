@@ -213,6 +213,9 @@ def wait_for_campaign_status(token, client, campaign_number, target_status="crea
                     if current_status == target_status:
                         print(f"Campaign reached status '{target_status}' after {attempt} attempt(s)")
                         return response, True
+                    if current_status == "failed":
+                        print(f"Campaign reached 'failed' status. Stopping poll.")
+                        return response, False
 
         if attempt < max_attempts:
             print(f"Waiting for status '{target_status}'... (attempt {attempt}/{max_attempts})")

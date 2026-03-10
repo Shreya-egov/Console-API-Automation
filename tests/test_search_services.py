@@ -68,6 +68,24 @@ def save_campaign_ids(data):
         json.dump(data, f, indent=2)
 
 
+def generate_dashboard(data):
+    """Generate the HTML dashboard report from campaign data."""
+    base_path = os.path.dirname(__file__)
+    template_path = os.path.join(base_path, "..", "reports", "dashboard.html")
+    output_path = os.path.join(base_path, "..", "reports", "campaign_report.html")
+
+    with open(template_path, "r") as f:
+        html = f.read()
+
+    html = html.replace("CAMPAIGN_DATA_PLACEHOLDER", json.dumps(data))
+
+    os.makedirs(os.path.dirname(output_path), exist_ok=True)
+    with open(output_path, "w") as f:
+        f.write(html)
+
+    print(f"Dashboard generated: {os.path.abspath(output_path)}")
+
+
 def search_campaign(token, client, campaign_number=None, campaign_id=None):
     """Search for a campaign by campaign number or ID."""
     payload = load_payload("campaign", "search_campaign.json")
@@ -730,6 +748,10 @@ class TestSearchServicesE2E:
         updated_data["staffIds"] = staff_ids
         save_campaign_ids(updated_data)
         print(f"Saved facility count ({len(facilities)}) and staff count ({len(staff)}) to campaign_ids.json")
+
+        # Generate dashboard report
+        dashboard_data = load_campaign_ids()
+        generate_dashboard(dashboard_data)
 
         print(f"\n=== Search Flow Completed Successfully ===")
         print(f"Summary:")

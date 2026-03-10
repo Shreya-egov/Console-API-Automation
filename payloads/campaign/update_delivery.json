@@ -33,7 +33,8 @@
             }
         },
         "resources": [],
-        "boundaries": [
+       "boundaries": 
+            [
             {
                 "code": "MICROPLAN_MO",
                 "name": "MICROPLAN_MO",
@@ -64,8 +65,25 @@
                 "isRoot": false,
                 "parent": "DJ3GU9Se3FGyrCiL2qiyn8",
                 "includeAllChildren": true
+            },
+            {
+                "code": "TBb4hYNmTqXi4XsVCY3z6d",
+                "name": "TBb4hYNmTqXi4XsVCY3z6d",
+                "type": "DISTRICT",
+                "isRoot": false,
+                "parent": "K20DqqbvsVqaHn8Ujshr12",
+                "includeAllChildren": false
+            },
+            {
+                "code": "iyKo8NgKrk7GtMLpPJZCZF",
+                "name": "iyKo8NgKrk7GtMLpPJZCZF",
+                "type": "ADMINSTRATIVEPOST",
+                "isRoot": false,
+                "parent": "TBb4hYNmTqXi4XsVCY3z6d",
+                "includeAllChildren": true
             }
         ],
+        
         "deliveryRules": [
             {
                 "id": "Bednet",
@@ -75,7 +93,7 @@
                 "cycles": [
                     {
                         "mandatoryWaitSinceLastCycleInDays": null,
-                        "startDate": 1765650600000,
+                        "startDate": 1773167400000,
                         "endDate": 1767551399000,
                         "id": 1,
                         "deliveries": [
@@ -88,7 +106,7 @@
                                         "condition": "memberCount>=1andmaxCount<=3",
                                         "ProductVariants": [
                                             {
-                                                "productVariantId": "PVAR-2025-07-30-000139",
+                                                "productVariantId": "PVAR-2026-02-06-000662",
                                                 "name": "Bednet - Grade - 1",
                                                 "quantity": 1
                                             }
@@ -101,16 +119,16 @@
                 ],
                 "resources": [
                     {
-                        "productVariantId": "PVAR-2025-07-30-000139",
+                        "productVariantId": "PVAR-2026-02-06-000662",
                         "isBaseUnitVariant": false,
                         "name": "Bednet - Grade - 1",
                         "quantity": 1
                     }
                 ],
                 "dashboardUrls": {
-                    "DISTRICT_SUPERVISOR": "/digit-ui/employee/dss/dashboard/district-health-dashboard-llin",
-                    "NATIONAL_SUPERVISOR": "/digit-ui/employee/dss/landing/national-health-dashboard-llin",
-                    "PROVINCIAL_SUPERVISOR": "/digit-ui/employee/dss/dashboard/provincial-health-dashboard-llin"
+                    "DISTRICT_SUPERVISOR": "/health-ui/employee/dss/dashboard/district-health-dashboard-llin",
+                    "NATIONAL_SUPERVISOR": "/health-ui/employee/dss/landing/national-health-dashboard-llin",
+                    "PROVINCIAL_SUPERVISOR": "/health-ui/employee/dss/dashboard/provincial-health-dashboard-llin"
                 },
                 "taskProcedure": [
                     "1 bednet is to be distributed per 2 household members.",
@@ -125,9 +143,7 @@
                 "eligibilityCriteria": [
                     "All households are eligible.",
                     "Prison inmates are eligible."
-                ],
-                "validMaxAge": 3,
-                "validMinAge": 3
+                ]
             }
         ]
     },

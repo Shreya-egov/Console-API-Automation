@@ -6,71 +6,8 @@
         "parentId": null,
         "campaignName": "",
         "campaignNumber": "",
-        "deliveryRules": [
-            {
-                "id": "Bednet",
-                "code": "Bednet",
-                "name": "Bednet",
-                "group": "MALARIA",
-                "cycles": [
-                    {
-                        "id": 1,
-                        "endDate": 1775413799000,
-                        "startDate": 1774636200000,
-                        "deliveries": [
-                            {
-                                "id": 1,
-                                "doseCriteria": [
-                                    {
-                                        "condition": "MIN(CEIL(memberCount/1), 3)",
-                                        "ProductVariants": [
-                                            {
-                                                "name": "Bednet - Grade - 1",
-                                                "quantity": 1,
-                                                "productVariantId": "PVAR-2025-07-30-000139"
-                                            }
-                                        ]
-                                    }
-                                ],
-                                "deliveryStrategy": "DIRECT",
-                                "mandatoryWaitSinceLastDeliveryInDays": null
-                            }
-                        ],
-                        "mandatoryWaitSinceLastCycleInDays": null
-                    }
-                ],
-                "resources": [
-                    {
-                        "name": "Bednet - Grade - 1",
-                        "quantity": 1,
-                        "productVariantId": "PVAR-2025-07-30-000139",
-                        "isBaseUnitVariant": false
-                    }
-                ],
-                "validMaxAge": 3,
-                "validMinAge": 3,
-                "dashboardUrls": {
-                    "DISTRICT_SUPERVISOR": "/digit-ui/employee/dss/dashboard/district-health-dashboard-llin",
-                    "NATIONAL_SUPERVISOR": "/digit-ui/employee/dss/landing/national-health-dashboard-llin",
-                    "PROVINCIAL_SUPERVISOR": "/digit-ui/employee/dss/dashboard/provincial-health-dashboard-llin"
-                },
-                "taskProcedure": [
-                    "1 bednet is to be distributed per 2 household members.",
-                    "If there are 4 household members, 2 bednets should be distributed.",
-                    "If there are 5 household members, 3 bednets should be distributed."
-                ],
-                "IsCycleDisable": true,
-                "attrAddDisable": false,
-                "beneficiaryType": "HOUSEHOLD",
-                "productCountHide": true,
-                "deliveryAddDisable": true,
-                "eligibilityCriteria": [
-                    "All households are eligible.",
-                    "Prison inmates are eligible."
-                ]
-            }
-        ],
-        "boundaries": [
+      "boundaries": 
+            [
             {
                 "code": "MICROPLAN_MO",
                 "name": "MICROPLAN_MO",
@@ -101,24 +38,93 @@
                 "isRoot": false,
                 "parent": "DJ3GU9Se3FGyrCiL2qiyn8",
                 "includeAllChildren": true
+            },
+            {
+                "code": "TBb4hYNmTqXi4XsVCY3z6d",
+                "name": "TBb4hYNmTqXi4XsVCY3z6d",
+                "type": "DISTRICT",
+                "isRoot": false,
+                "parent": "K20DqqbvsVqaHn8Ujshr12",
+                "includeAllChildren": false
+            },
+            {
+                "code": "iyKo8NgKrk7GtMLpPJZCZF",
+                "name": "iyKo8NgKrk7GtMLpPJZCZF",
+                "type": "ADMINSTRATIVEPOST",
+                "isRoot": false,
+                "parent": "TBb4hYNmTqXi4XsVCY3z6d",
+                "includeAllChildren": true
+            }
+        ],
+        
+        "deliveryRules": [
+            {
+                "id": "Bednet",
+                "code": "Bednet",
+                "name": "Bednet",
+                "group": "MALARIA",
+                "cycles": [
+                    {
+                        "mandatoryWaitSinceLastCycleInDays": null,
+                        "startDate": 1773167400000,
+                        "endDate": 1767551399000,
+                        "id": 1,
+                        "deliveries": [
+                            {
+                                "id": 1,
+                                "deliveryStrategy": "DIRECT",
+                                "mandatoryWaitSinceLastDeliveryInDays": null,
+                                "doseCriteria": [
+                                    {
+                                        "condition": "memberCount>=1andmaxCount<=3",
+                                        "ProductVariants": [
+                                            {
+                                                "productVariantId": "PVAR-2026-02-06-000662",
+                                                "name": "Bednet - Grade - 1",
+                                                "quantity": 1
+                                            }
+                                        ]
+                                    }
+                                ]
+                            }
+                        ]
+                    }
+                ],
+                "resources": [
+                    {
+                        "productVariantId": "PVAR-2026-02-06-000662",
+                        "isBaseUnitVariant": false,
+                        "name": "Bednet - Grade - 1",
+                        "quantity": 1
+                    }
+                ],
+                "dashboardUrls": {
+                    "DISTRICT_SUPERVISOR": "/health-ui/employee/dss/dashboard/district-health-dashboard-llin",
+                    "NATIONAL_SUPERVISOR": "/health-ui/employee/dss/landing/national-health-dashboard-llin",
+                    "PROVINCIAL_SUPERVISOR": "/health-ui/employee/dss/dashboard/provincial-health-dashboard-llin"
+                },
+                "taskProcedure": [
+                    "1 bednet is to be distributed per 2 household members.",
+                    "If there are 4 household members, 2 bednets should be distributed.",
+                    "If there are 5 household members, 3 bednets should be distributed."
+                ],
+                "IsCycleDisable": true,
+                "attrAddDisable": false,
+                "beneficiaryType": "HOUSEHOLD",
+                "productCountHide": true,
+                "deliveryAddDisable": true,
+                "eligibilityCriteria": [
+                    "All households are eligible.",
+                    "Prison inmates are eligible."
+                ]
             }
         ],
         "id": "",
         "resources": [
-            {
-                "type": "facility",
-                "filename": "Bednet_december_2025-13-01_Facility Template.xlsx",
-                "filestoreId": "453a70a5-8f24-4a85-8f66-b37e633bb820"
-            },
-            {
-                "type": "boundary",
-                "filename": "Bednet_december_2025-13-01_Target Template.xlsx",
-                "filestoreId": "a63124cb-cdf6-4414-8ae3-45b78ff44116"
-            },
-            {
-                "type": "user",
-                "filename": "Bednet_december_2025-13-01_User Template.xlsx",
-                "filestoreId": "024bf364-5053-4d7b-8dc7-1a488a145775"
+             {
+                 "type": "unified-console-resources",
+                "filename": "Bednet_march_2026-10-001_Unified_Template.xlsx",
+                "filestoreId": "da4bd5c6-0a01-4079-9a95-af5bfcbc43fc"
             }
         ],
         "projectType": "Bednet",
@@ -128,8 +134,21 @@
         "status": "drafted",
         "additionalDetails": {
             "beneficiaryType": "HOUSEHOLD",
-            "key": 2,
-            "cycleData": {}
+            "key": 10,
+            "cycleData": {
+                "cycleConfgureDate": {
+                    "cycle": 1,
+                    "isDisable": true,
+                    "deliveries": 1
+                },
+                "cycleData": [
+                    {
+                        "key": 1,
+                        "toDate": "2026-01-04T00:00:00.000Z",
+                        "fromDate": "2025-12-14T00:00:00.000Z"
+                    }
+                ]
+            }
         }
     },
     "RequestInfo": {}
