@@ -36,26 +36,30 @@ This framework is designed to test multiple microservices with a focus on:
 ```
 Console-API-Automation/
 ├── tests/                          # Test modules
-│   ├── test_campaign_service.py   # Campaign service E2E tests
+│   ├── test_excel_ingestion.py    # Excel ingestion + campaign creation E2E tests
 │   └── test_search_services.py    # Search API tests (Campaign, Project, Facility, Staff)
 ├── utils/                          # Utility modules
-│   ├── api_client.py              # HTTP client wrapper
+│   ├── api_client.py              # HTTP client wrapper (JSON + file upload)
 │   ├── auth.py                    # Authentication token management
 │   ├── config.py                  # Configuration loader
 │   ├── data_loader.py             # Payload loader with dynamic dates
 │   ├── request_info.py            # Request metadata builder
 │   └── search_helpers.py          # Common search operations
 ├── payloads/                       # JSON payload templates
-│   └── campaign/                  # Campaign service payloads
-│       ├── create_setup.json      # Initial campaign setup
-│       ├── update_boundary.json   # Add boundary information
-│       ├── update_delivery.json   # Add delivery rules
-│       ├── update_files.json      # Add resource files
-│       ├── create_campaign.json   # Finalize campaign creation
-│       ├── search_campaign.json   # Search campaigns
-│       ├── search_project.json    # Search projects by campaign
-│       ├── search_project_facility.json  # Search project facilities
-│       └── search_project_staff.json     # Search project staff
+│   ├── campaign/                  # Campaign service payloads
+│   │   ├── create_setup.json      # Initial campaign setup
+│   │   ├── update_boundary.json   # Add boundary information
+│   │   ├── update_delivery.json   # Add delivery rules
+│   │   ├── update_files.json      # Add resource files
+│   │   ├── create_campaign.json   # Finalize campaign creation
+│   │   ├── search_campaign.json   # Search campaigns
+│   │   ├── search_project.json    # Search projects by campaign
+│   │   ├── search_project_facility.json  # Search project facilities
+│   │   └── search_project_staff.json     # Search project staff
+│   └── excel_ingestion/           # Excel ingestion service payloads
+│       ├── generate_init.json     # Initiate template generation
+│       ├── generation_search.json # Poll generation status
+│       └── process_search.json    # Poll processing status
 ├── data/                          # Test data
 │   ├── inputs.json               # Test input data
 │   └── outputs/                  # Test outputs
@@ -81,6 +85,7 @@ Console-API-Automation/
    - Abstraction over HTTP requests
    - Automatic authentication header injection
    - Support for GET, POST, PUT, DELETE methods
+   - File upload via multipart/form-data (`upload_file()`)
 
 2. **Authentication Module** (`utils/auth.py`)
    - OAuth2 token acquisition
@@ -145,7 +150,7 @@ Generate Reports
 
 ```bash
 git clone <repository-url>
-cd api_automation_project
+cd Console-API-Automation
 ```
 
 ### 2. Create Virtual Environment
@@ -180,6 +185,9 @@ SEARCH_OFFSET=0
 HIERARCHYTYPE=MICROPLAN
 BOUNDARY_TYPE=LOCALITY
 BOUNDARY_CODE=your_boundary_code
+
+SERVICE_EXCEL_INGESTION=/excel-ingestion/v1/data
+SERVICE_FILESTORE=/filestore/v1/files
 ```
 
 ### 5. Verify Setup
@@ -212,6 +220,8 @@ python -m pytest tests/ -v
 | `SERVICE_PROJECT_FACILITY` | Project facility endpoint | `/project/facility/v1` |
 | `SERVICE_PROJECT_STAFF` | Project staff endpoint | `/project/staff/v1` |
 | `SERVICE_PROJECT_FACTORY` | Project factory endpoint | `/project-factory/v1/project-type` |
+| `SERVICE_EXCEL_INGESTION` | Excel ingestion endpoint | `/excel-ingestion/v1/data` |
+| `SERVICE_FILESTORE` | Filestore endpoint | `/filestore/v1/files` |
 
 ### Pytest Configuration (pytest.ini)
 
@@ -228,41 +238,49 @@ This ensures the root directory is in the Python path for imports.
 
 | Service | Operations | Test File |
 |---------|-----------|-----------|
-| **Campaign** | Create Setup, Update Boundary, Update Delivery, Update Files, Create Campaign | `test_campaign_service.py` |
+| **Excel Ingestion + Campaign** | Draft Campaign, Generate Template, Poll Generation, Download File, Upload File, Update Files, Finalize Campaign | `test_excel_ingestion.py` |
 | **Search Services** | Search Campaign, Search Project, Search Project Facility, Search Project Staff | `test_search_services.py` |
 
-**Total: 2 Test Files, 9 Payload Templates**
+**Total: 2 Test Files, 12 Payload Templates**
 
 ### Test Classes
 
-#### test_campaign_service.py
-- `TestCampaignSetup` - Campaign setup creation tests
-- `TestCampaignBoundary` - Campaign boundary update tests
-- `TestCampaignDelivery` - Campaign delivery rules tests
-- `TestCampaignCreate` - Campaign finalization tests
-- `TestCampaignSearch` - Basic campaign search tests
-- `TestCampaignE2E` - End-to-end campaign workflow
+#### test_excel_ingestion.py
+- `TestGenerateExcelTemplate` - Template generation tests (2 tests)
+- `TestGenerationSearch` - Generation search/polling tests (1 test)
+- `TestFileOperations` - Filestore download URL tests (1 test)
+- `TestProcessSearch` - Process search tests (1 test)
+- `TestExcelIngestionE2E` - End-to-end flow: draft campaign → excel ingestion → finalize campaign (1 test)
 
 #### test_search_services.py
 - `TestCampaignSearchService` - Campaign search API tests (4 tests)
 - `TestProjectSearchService` - Project search API tests (5 tests)
 - `TestProjectFacilitySearchService` - Project facility search tests (5 tests)
 - `TestProjectStaffSearchService` - Project staff search tests (5 tests)
-- `TestSearchServicesE2E` - End-to-end search flow test
+- `TestSearchServicesE2E` - End-to-end search flow test (1 test)
 
-### Campaign Service Flow
+### Excel Ingestion + Campaign E2E Flow
 
-The campaign service tests follow a multi-step workflow:
+The `TestExcelIngestionE2E` test covers the full campaign lifecycle with excel ingestion:
 
-1. **Create Setup** - Initialize campaign with basic details
-2. **Update Boundary** - Add boundary/hierarchy information
-3. **Update Delivery** - Configure delivery rules and cycles
-4. **Update Files** - Attach resource files (users, facilities, boundaries)
-5. **Create Campaign** - Finalize and activate the campaign
-6. **Search Campaign** - Verify campaign was created successfully
-7. **Search Project** - Find projects by campaign number (referenceID)
-8. **Search Project Facility** - Find facilities assigned to projects
-9. **Search Project Staff** - Find staff assigned to projects
+1. **Create Campaign Draft** - Setup with boundary and delivery rules
+2. **Generate Excel Template** - POST to `/excel-ingestion/v1/data/generate/_init`
+3. **Poll Generation Status** - POST to `/excel-ingestion/v1/data/generate/_search`
+4. **Get Download URL** - GET from `/filestore/v1/files/url`
+5. **Download Excel File** - Download from pre-signed S3 URL
+6. **Update Campaign Files** - Attach resource with uploaded filestoreId
+7. **Finalize Campaign** - Change action to `create`
+8. **Wait for Campaign Status** - Poll until `created`
+9. **Save IDs** - Write `campaign_ids.json` for downstream tests
+
+### Search Services Flow
+
+After the campaign is created, the search tests validate:
+
+1. **Search Campaign** - Find campaign by number and ID
+2. **Search Project** - Find projects by campaign number (referenceID)
+3. **Search Project Facility** - Find facilities assigned to projects
+4. **Search Project Staff** - Find staff assigned to projects
 
 ---
 
@@ -372,20 +390,22 @@ def create_campaign_setup(token, client):
 # Activate virtual environment
 source venv/bin/activate
 
-# Run all tests
-python -m pytest tests/
+# Run all tests (excel ingestion first, then search)
+python -m pytest tests/test_excel_ingestion.py tests/test_search_services.py -v -s
 
-# Run specific test file
-python -m pytest tests/test_campaign_service.py
-python -m pytest tests/test_search_services.py
+# Run only excel ingestion tests
+python -m pytest tests/test_excel_ingestion.py -v -s
+
+# Run only search tests (requires campaign_ids.json from a prior run)
+python -m pytest tests/test_search_services.py -v -s
+
+# Run E2E tests only
+python -m pytest tests/test_excel_ingestion.py::TestExcelIngestionE2E -v -s
+python -m pytest tests/test_search_services.py::TestSearchServicesE2E -v -s
 
 # Run specific test class
 python -m pytest tests/test_search_services.py::TestProjectSearchService -v
 python -m pytest tests/test_search_services.py::TestProjectFacilitySearchService -v
-
-# Run specific test function
-python -m pytest tests/test_campaign_service.py::TestCampaignE2E::test_complete_campaign_workflow
-python -m pytest tests/test_search_services.py::TestSearchServicesE2E::test_complete_search_flow
 
 # Run with verbose output
 python -m pytest tests/ -v
@@ -422,7 +442,7 @@ allure open allure-report
 ### Fresh Test Run (Clear Previous IDs)
 
 ```bash
-rm -f data/outputs/campaign_ids.json && python -m pytest tests/ --html=reports/report.html --self-contained-html
+rm -f data/outputs/campaign_ids.json && python -m pytest tests/test_excel_ingestion.py tests/test_search_services.py --html=reports/report.html --self-contained-html
 ```
 
 This removes the previous campaign IDs file before running tests, ensuring a clean test run.
@@ -437,6 +457,7 @@ This removes the previous campaign IDs file before running tests, ensuring a cle
    - Stores campaign details created during test execution
    - JSON format with comprehensive campaign data:
      - `campaignId`, `campaignNumber`, `campaignName`
+     - `excelIngestion` - Generation and upload IDs
      - `totalCount` - Total projects created
      - `projectsByBoundaryType` - Project IDs grouped by boundary type
      - `facilityCount` - Total facilities assigned
@@ -502,7 +523,7 @@ The dashboard displays:
 
 ```bash
 # Run tests and regenerate dashboard
-python -m pytest tests/test_campaign_service.py -v && python3 generate_dashboard.py
+python -m pytest tests/test_excel_ingestion.py tests/test_search_services.py -v && python3 generate_dashboard.py
 
 # Open updated dashboard
 xdg-open reports/campaign_dashboard.html
@@ -529,6 +550,9 @@ response = client.get("/endpoint")
 response = client.post("/endpoint", payload)
 response = client.put("/endpoint", payload)
 response = client.delete("/endpoint")
+
+# Upload file (multipart/form-data)
+response = client.upload_file("/filestore/v1/files", "path/to/file.xlsx", {"tenantId": "mz"})
 ```
 
 **Constructor Parameters:**
@@ -541,6 +565,7 @@ response = client.delete("/endpoint")
 - `post(endpoint, data=None)`: POST request
 - `put(endpoint, data=None)`: PUT request
 - `delete(endpoint)`: DELETE request
+- `upload_file(endpoint, file_path, form_fields=None)`: Multipart file upload
 
 ### auth.py
 
@@ -584,6 +609,8 @@ params = search_params  # Contains limit, offset, tenantId
 - `search_limit`, `search_offset`: Pagination settings
 - `search_params`: Dictionary with limit, offset, tenantId
 - `hierarchyType`, `boundaryCode`, `boundaryType`: Boundary configs
+- `SERVICE_EXCEL_INGESTION`: Excel ingestion service endpoint
+- `SERVICE_FILESTORE`: Filestore service endpoint
 
 ### data_loader.py
 
@@ -595,6 +622,7 @@ Loads JSON payload template.
 from utils.data_loader import load_payload
 
 payload = load_payload("campaign", "create_setup.json")
+payload = load_payload("excel_ingestion", "generate_init.json")
 ```
 
 **Parameters:**
@@ -715,6 +743,6 @@ payload["RequestInfo"] = request_info
    - Campaign dates must be in the future
    - Use `apply_dynamic_dates()` to auto-set valid dates
 
-
-
-**Last Updated**: 2025-12-20
+5. **Search Tests Failing**
+   - Run `test_excel_ingestion.py` first to create a campaign and generate `campaign_ids.json`
+   - Verify `campaign_ids.json` contains valid `campaignId` and `campaignNumber`
