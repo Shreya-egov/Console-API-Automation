@@ -188,7 +188,8 @@ class TestCampaignSearchService:
 
     def test_search_campaign_by_number(self):
         """Test searching campaign by campaign number."""
-        assert self.campaign_data is not None, "No campaign data found. Run campaign creation test first."
+        if self.campaign_data is None:
+            pytest.skip("No campaign data found. Run campaign creation test first.")
 
         campaign_number = self.campaign_data.get("campaignNumber")
         assert campaign_number, "Campaign number not found in saved data"
@@ -227,7 +228,8 @@ class TestCampaignSearchService:
 
     def test_search_campaign_by_id(self):
         """Test searching campaign by campaign ID."""
-        assert self.campaign_data is not None, "No campaign data found. Run campaign creation test first."
+        if self.campaign_data is None:
+            pytest.skip("No campaign data found. Run campaign creation test first.")
 
         campaign_id = self.campaign_data.get("campaignId")
         assert campaign_id, "Campaign ID not found in saved data"
@@ -274,7 +276,8 @@ class TestCampaignSearchService:
 
     def test_search_campaign_validates_response_structure(self):
         """Test that campaign search response has expected structure."""
-        assert self.campaign_data is not None, "No campaign data found. Run campaign creation test first."
+        if self.campaign_data is None:
+            pytest.skip("No campaign data found. Run campaign creation test first.")
 
         campaign_number = self.campaign_data.get("campaignNumber")
         response = search_campaign(self.token, self.client, campaign_number=campaign_number)
@@ -308,7 +311,8 @@ class TestProjectSearchService:
 
     def test_search_project_by_campaign_number(self):
         """Test searching projects by campaign number (referenceID)."""
-        assert self.campaign_data is not None, "No campaign data found. Run campaign creation test first."
+        if self.campaign_data is None:
+            pytest.skip("No campaign data found. Run campaign creation test first.")
 
         campaign_number = self.campaign_data.get("campaignNumber")
         assert campaign_number, "Campaign number not found in saved data"
@@ -330,7 +334,8 @@ class TestProjectSearchService:
 
     def test_search_project_returns_correct_reference_id(self):
         """Test that returned projects have correct referenceID."""
-        assert self.campaign_data is not None, "No campaign data found. Run campaign creation test first."
+        if self.campaign_data is None:
+            pytest.skip("No campaign data found. Run campaign creation test first.")
 
         campaign_number = self.campaign_data.get("campaignNumber")
         response = search_project(self.token, self.client, campaign_number)
@@ -347,7 +352,8 @@ class TestProjectSearchService:
 
     def test_search_project_validates_response_structure(self):
         """Test that project search response has expected structure."""
-        assert self.campaign_data is not None, "No campaign data found. Run campaign creation test first."
+        if self.campaign_data is None:
+            pytest.skip("No campaign data found. Run campaign creation test first.")
 
         campaign_number = self.campaign_data.get("campaignNumber")
         response = search_project(self.token, self.client, campaign_number)
@@ -385,7 +391,8 @@ class TestProjectSearchService:
 
     def test_search_project_groups_by_boundary_type(self):
         """Test grouping projects by boundaryType."""
-        assert self.campaign_data is not None, "No campaign data found. Run campaign creation test first."
+        if self.campaign_data is None:
+            pytest.skip("No campaign data found. Run campaign creation test first.")
 
         campaign_number = self.campaign_data.get("campaignNumber")
         response = search_project(self.token, self.client, campaign_number)
@@ -407,8 +414,13 @@ class TestProjectSearchService:
         for boundary_type, ids in projects_by_boundary.items():
             print(f"  {boundary_type}: {len(ids)} project(s)")
 
-        # Store project IDs for facility and staff tests
-        self.__class__.project_ids = [p.get("id") for p in projects]
+        # Save project data to campaign_ids.json for facility and staff tests
+        if projects_by_boundary:
+            updated_data = load_campaign_ids()
+            updated_data["totalCount"] = data.get("TotalCount", 0)
+            updated_data["projectsByBoundaryType"] = projects_by_boundary
+            save_campaign_ids(updated_data)
+            print("Saved projectsByBoundaryType to campaign_ids.json")
 
 
 # --- Test Cases for Project Facility Search ---
@@ -445,7 +457,8 @@ class TestProjectFacilitySearchService:
 
     def test_search_project_facility_by_project_ids(self):
         """Test searching project facilities by project IDs."""
-        assert len(self.project_ids) > 0, "No project IDs available. Run project search test first."
+        if len(self.project_ids) == 0:
+            pytest.skip("No project IDs available. Run project search test first.")
 
         print(f"\nSearching for facilities for {len(self.project_ids)} project(s)")
         response = search_project_facility(self.token, self.client, self.project_ids)
@@ -562,7 +575,8 @@ class TestProjectStaffSearchService:
 
     def test_search_project_staff_by_project_ids(self):
         """Test searching project staff by project IDs."""
-        assert len(self.project_ids) > 0, "No project IDs available. Run project search test first."
+        if len(self.project_ids) == 0:
+            pytest.skip("No project IDs available. Run project search test first.")
 
         print(f"\nSearching for staff for {len(self.project_ids)} project(s)")
         response = search_project_staff(self.token, self.client, self.project_ids)
@@ -665,7 +679,8 @@ class TestSearchServicesE2E:
         3. Search facilities by projects
         4. Search staff by projects
         """
-        assert self.campaign_data is not None, "No campaign data found. Run campaign creation test first."
+        if self.campaign_data is None:
+            pytest.skip("No campaign data found. Run campaign creation test first.")
 
         campaign_number = self.campaign_data.get("campaignNumber")
         campaign_id = self.campaign_data.get("campaignId")
