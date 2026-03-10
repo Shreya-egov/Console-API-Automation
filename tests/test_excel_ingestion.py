@@ -344,7 +344,7 @@ class TestProcessSearch:
         assert len(details) == 0, "Expected empty results for invalid ID"
 
 
-# --- Campaign Creation Helpers (mirrored from test_campaign_service.py) ---
+# --- Campaign Creation Helpers ---
 
 def create_campaign_setup(token, client, campaign_name=None):
     """Create a new campaign setup (draft)."""
