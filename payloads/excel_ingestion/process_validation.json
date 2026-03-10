@@ -1,0 +1,13 @@
+{
+    "ResourceDetails": {
+        "type": "unified-console-validation",
+        "hierarchyType": "MICROPLAN",
+        "tenantId": "mz",
+        "fileStoreId": "",
+        "additionalDetails": {},
+        "referenceId": "",
+        "locale": "en_MZ",
+        "referenceType": "campaign"
+    },
+    "RequestInfo": {}
+}

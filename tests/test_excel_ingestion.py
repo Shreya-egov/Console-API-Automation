@@ -199,6 +199,23 @@ def upload_file(client, file_path):
 
 # --- Process Helpers ---
 
+def validate_process(token, client, file_store_id, campaign_id):
+    """
+    POST /excel-ingestion/v1/data/process/_validation
+    Trigger process validation for an uploaded resource file.
+    """
+    payload = load_payload("excel_ingestion", "process_validation.json")
+    payload["RequestInfo"] = get_campaign_request_info(token)
+    payload["ResourceDetails"]["tenantId"] = tenantId
+    payload["ResourceDetails"]["hierarchyType"] = hierarchyType
+    payload["ResourceDetails"]["fileStoreId"] = file_store_id
+    payload["ResourceDetails"]["referenceId"] = campaign_id
+    payload["ResourceDetails"]["locale"] = locale
+
+    url = f"{EXCEL_INGESTION_BASE}/process/_validation"
+    return client.post(url, payload)
+
+
 def search_process_status(token, client, process_id):
     """
     POST /excel-ingestion/v1/data/process/_search
@@ -325,6 +342,35 @@ class TestFileOperations:
             f"Unexpected status: {response.status_code} - {response.text}"
 
 
+class TestProcessValidation:
+    """Test cases for process validation API."""
+
+    @pytest.fixture(autouse=True)
+    def setup(self):
+        self.token = get_auth_token("user")
+        self.client = APIClient(token=self.token)
+        self.campaign_data = load_campaign_ids()
+
+    def test_process_validation_valid_id(self):
+        """Test process validation with a valid fileStoreId and campaignId."""
+        assert self.campaign_data, "No campaign data found in campaign_ids.json"
+        file_store_id = self.campaign_data["excelIngestion"]["uploadedFileStoreId"]
+        campaign_id = self.campaign_data["campaignId"]
+
+        response = validate_process(self.token, self.client, file_store_id, campaign_id)
+        assert response.status_code == 202, \
+            f"Process validation failed: {response.status_code} - {response.text}"
+
+        data = response.json()
+        process_resource = data.get("ProcessResource", {})
+        assert process_resource.get("id"), "No process resource ID returned"
+        assert process_resource.get("fileStoreId") == file_store_id
+        assert process_resource.get("referenceId") == campaign_id
+        assert process_resource.get("status") == "pending"
+        print(f"  Process resource ID: {process_resource['id']}")
+        print(f"  Status: {process_resource['status']}")
+
+
 class TestProcessSearch:
     """Test cases for process search API."""
 
@@ -332,6 +378,33 @@ class TestProcessSearch:
     def setup(self):
         self.token = get_auth_token("user")
         self.client = APIClient(token=self.token)
+        self.campaign_data = load_campaign_ids()
+
+    def test_process_search_valid_id(self):
+        """Test process validation followed by search with the returned process ID."""
+        assert self.campaign_data, "No campaign data found in campaign_ids.json"
+        file_store_id = self.campaign_data["excelIngestion"]["uploadedFileStoreId"]
+        campaign_id = self.campaign_data["campaignId"]
+
+        # Trigger validation first to get a process resource ID
+        val_resp = validate_process(self.token, self.client, file_store_id, campaign_id)
+        assert val_resp.status_code == 202, \
+            f"Process validation failed: {val_resp.status_code} - {val_resp.text}"
+        process_id = val_resp.json()["ProcessResource"]["id"]
+        print(f"  Process resource ID from validation: {process_id}")
+
+        # Search with the returned process resource ID
+        response = search_process_status(self.token, self.client, process_id)
+        assert response.status_code == 200, \
+            f"Process search failed: {response.status_code} - {response.text}"
+
+        data = response.json()
+        details = data.get("ProcessingDetails", [])
+        assert len(details) > 0, "Expected non-empty ProcessingDetails for valid ID"
+        assert details[0]["id"] == process_id
+        assert details[0]["fileStoreId"] == file_store_id
+        print(f"  Process status: {details[0].get('status')}")
+        print(f"  TotalCount: {data.get('TotalCount')}")
 
     def test_process_search_invalid_id(self):
         """Test searching with a non-existent process ID."""
