@@ -1,0 +1,9 @@
+{
+    "RequestInfo": {},
+    "GenerationSearchCriteria": {
+        "tenantId": "mz",
+        "ids": [],
+        "limit": 20,
+        "offset": 0
+    }
+}
