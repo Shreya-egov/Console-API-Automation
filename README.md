@@ -14,6 +14,7 @@ A comprehensive Python-based API automation testing framework for microservices 
 - [Writing Tests](#writing-tests)
 - [Running Tests](#running-tests)
 - [Reporting](#reporting)
+- [CI/CD](#cicd)
 - [Utilities Documentation](#utilities-documentation)
 - [Best Practices](#best-practices)
 - [Troubleshooting](#troubleshooting)
@@ -59,6 +60,7 @@ Console-API-Automation/
 │   └── excel_ingestion/           # Excel ingestion service payloads
 │       ├── generate_init.json     # Initiate template generation
 │       ├── generation_search.json # Poll generation status
+│       ├── process_validation.json # Trigger process validation
 │       └── process_search.json    # Poll processing status
 ├── data/                          # Test data
 │   ├── inputs.json               # Test input data
@@ -66,10 +68,16 @@ Console-API-Automation/
 │       └── campaign_ids.json     # Generated campaign IDs
 ├── reports/                       # Test reports
 │   ├── report.html               # Pytest HTML report
+│   ├── junit.xml                 # JUnit XML report (CI/CD)
 │   ├── dashboard.html            # Dashboard template
-│   └── campaign_dashboard.html   # Generated campaign dashboard
+│   ├── campaign_dashboard.html   # Generated campaign dashboard
+│   └── campaign_report.html     # Generated campaign report
+├── .github/                       # CI/CD configuration
+│   └── workflows/
+│       └── ci.yml                # GitHub Actions test pipeline
 ├── generate_dashboard.py         # Dashboard generator script
 ├── .env                          # Environment configuration
+├── .env.example                  # Example environment template
 ├── pytest.ini                    # Pytest configuration
 ├── requirements.txt              # Python dependencies
 └── README.md                     # This file
@@ -163,12 +171,12 @@ source venv/bin/activate  # On Windows: venv\Scripts\activate
 ### 3. Install Dependencies
 
 ```bash
-pip install python-dotenv requests pytest pytest-html pytest-metadata allure-pytest
+pip install -r requirements.txt
 ```
 
 ### 4. Configure Environment
 
-Create or update `.env` file with your environment-specific values:
+Copy `.env.example` to `.env` and update with your environment-specific values:
 
 ```env
 BASE_URL=https://your-api-server.com
@@ -238,10 +246,10 @@ This ensures the root directory is in the Python path for imports.
 
 | Service | Operations | Test File |
 |---------|-----------|-----------|
-| **Excel Ingestion + Campaign** | Draft Campaign, Generate Template, Poll Generation, Download File, Upload File, Update Files, Finalize Campaign | `test_excel_ingestion.py` |
+| **Excel Ingestion + Campaign** | Draft Campaign, Generate Template, Poll Generation, Download File, Upload File, Process Validation, Update Files, Finalize Campaign | `test_excel_ingestion.py` |
 | **Search Services** | Search Campaign, Search Project, Search Project Facility, Search Project Staff | `test_search_services.py` |
 
-**Total: 2 Test Files, 12 Payload Templates**
+**Total: 2 Test Files, 13 Payload Templates**
 
 ### Test Classes
 
@@ -249,7 +257,8 @@ This ensures the root directory is in the Python path for imports.
 - `TestGenerateExcelTemplate` - Template generation tests (2 tests)
 - `TestGenerationSearch` - Generation search/polling tests (1 test)
 - `TestFileOperations` - Filestore download URL tests (1 test)
-- `TestProcessSearch` - Process search tests (1 test)
+- `TestProcessValidation` - Process validation API tests (1 test)
+- `TestProcessSearch` - Process search tests (2 tests)
 - `TestExcelIngestionE2E` - End-to-end flow: draft campaign → excel ingestion → finalize campaign (1 test)
 
 #### test_search_services.py
@@ -268,10 +277,11 @@ The `TestExcelIngestionE2E` test covers the full campaign lifecycle with excel i
 3. **Poll Generation Status** - POST to `/excel-ingestion/v1/data/generate/_search`
 4. **Get Download URL** - GET from `/filestore/v1/files/url`
 5. **Download Excel File** - Download from pre-signed S3 URL
-6. **Update Campaign Files** - Attach resource with uploaded filestoreId
-7. **Finalize Campaign** - Change action to `create`
-8. **Wait for Campaign Status** - Poll until `created`
-9. **Save IDs** - Write `campaign_ids.json` for downstream tests
+6. **Use Upload FileStoreId** - Use pre-configured filestoreId for upload
+7. **Update Campaign Files** - Attach resource with uploaded filestoreId
+8. **Finalize Campaign** - Change action to `create`
+9. **Wait for Campaign Status** - Poll until `created`
+10. **Save IDs** - Write `campaign_ids.json` for downstream tests
 
 ### Search Services Flow
 
@@ -472,16 +482,19 @@ This removes the previous campaign IDs file before running tests, ensuring a cle
    - Summary dashboard with pass/fail counts
    - Detailed test results with error traces
 
-2. **Allure Report** (`allure-report/`)
-   - Rich, interactive web-based report
-   - Test execution trends
-   - Test categorization and filtering
-   - Detailed logs and attachments
+2. **JUnit XML Report** (`reports/junit.xml`)
+   - Standard JUnit XML format for CI/CD integration
+   - Generated with `--junitxml=reports/junit.xml`
+   - Used by GitHub Actions to publish test results to PR checks
 
 3. **Campaign Dashboard** (`reports/campaign_dashboard.html`)
    - Visual dashboard showing campaign test results
    - Displays campaign details, projects, facilities, and staff
-   - Auto-generated from test output data
+   - Auto-generated from test output data via `generate_dashboard.py`
+
+4. **Campaign Report** (`reports/campaign_report.html`)
+   - Generated by the search services E2E test
+   - Contains campaign, project, facility, and staff data from test execution
 
 ---
 
@@ -528,6 +541,38 @@ python -m pytest tests/test_excel_ingestion.py tests/test_search_services.py -v 
 # Open updated dashboard
 xdg-open reports/campaign_dashboard.html
 ```
+
+---
+
+## CI/CD
+
+The project includes a GitHub Actions pipeline (`.github/workflows/ci.yml`) for automated testing.
+
+### Triggers
+
+- **Push** to `main` branch
+- **Pull requests** targeting `main`
+- **Manual** via `workflow_dispatch`
+
+### Pipeline Steps
+
+1. Checkout code and set up Python 3.10 with pip caching
+2. Install dependencies from `requirements.txt`
+3. Create `.env` file from GitHub repository secrets
+4. Create `data/outputs/` directory
+5. Run pytest with JUnit XML and HTML reports
+6. Upload test results and reports as artifacts (30-day retention)
+7. Publish test results to PR checks via `publish-unit-test-result-action`
+
+### Required GitHub Secrets
+
+All environment variables from `.env` must be configured as repository secrets. See `.env.example` for the full list of required variables.
+
+### Viewing Results
+
+- **PR Checks**: Test results are published directly to pull request checks
+- **Artifacts**: Download `test-results` artifact for HTML reports and campaign output data
+- **JUnit**: Download `junit-results` artifact for CI integration
 
 ---
 
