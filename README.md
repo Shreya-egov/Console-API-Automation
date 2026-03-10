@@ -185,7 +185,7 @@ BOUNDARY_CODE=your_boundary_code
 ### 5. Verify Setup
 
 ```bash
-pytest tests/ -v
+python -m pytest tests/ -v
 ```
 
 ---
@@ -373,31 +373,31 @@ def create_campaign_setup(token, client):
 source venv/bin/activate
 
 # Run all tests
-pytest tests/
+python -m pytest tests/
 
 # Run specific test file
-pytest tests/test_campaign_service.py
-pytest tests/test_search_services.py
+python -m pytest tests/test_campaign_service.py
+python -m pytest tests/test_search_services.py
 
 # Run specific test class
-pytest tests/test_search_services.py::TestProjectSearchService -v
-pytest tests/test_search_services.py::TestProjectFacilitySearchService -v
+python -m pytest tests/test_search_services.py::TestProjectSearchService -v
+python -m pytest tests/test_search_services.py::TestProjectFacilitySearchService -v
 
 # Run specific test function
-pytest tests/test_campaign_service.py::TestCampaignE2E::test_complete_campaign_workflow
-pytest tests/test_search_services.py::TestSearchServicesE2E::test_complete_search_flow
+python -m pytest tests/test_campaign_service.py::TestCampaignE2E::test_complete_campaign_workflow
+python -m pytest tests/test_search_services.py::TestSearchServicesE2E::test_complete_search_flow
 
 # Run with verbose output
-pytest tests/ -v
+python -m pytest tests/ -v
 
 # Run with print statements visible
-pytest tests/ -s
+python -m pytest tests/ -s
 ```
 
 ### HTML Report Generation
 
 ```bash
-pytest tests/ --html=reports/report.html --self-contained-html
+python -m pytest tests/ --html=reports/report.html --self-contained-html
 ```
 
 The HTML report will be generated at `reports/report.html` with:
@@ -410,7 +410,7 @@ The HTML report will be generated at `reports/report.html` with:
 
 ```bash
 # Generate Allure results
-pytest --alluredir=allure-results
+python -m pytest --alluredir=allure-results
 
 # Generate Allure report
 allure generate allure-results --clean -o allure-report
@@ -422,7 +422,7 @@ allure open allure-report
 ### Fresh Test Run (Clear Previous IDs)
 
 ```bash
-rm -f data/outputs/campaign_ids.json && pytest tests/ --html=reports/report.html --self-contained-html
+rm -f data/outputs/campaign_ids.json && python -m pytest tests/ --html=reports/report.html --self-contained-html
 ```
 
 This removes the previous campaign IDs file before running tests, ensuring a clean test run.
@@ -502,7 +502,7 @@ The dashboard displays:
 
 ```bash
 # Run tests and regenerate dashboard
-pytest tests/test_campaign_service.py -v && python3 generate_dashboard.py
+python -m pytest tests/test_campaign_service.py -v && python3 generate_dashboard.py
 
 # Open updated dashboard
 xdg-open reports/campaign_dashboard.html
