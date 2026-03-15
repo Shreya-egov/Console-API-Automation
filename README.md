@@ -213,7 +213,7 @@ python -m pytest tests/ -v
 | Variable | Description | Example |
 |----------|-------------|---------|
 | `BASE_URL` | API base URL | `https://hcm-demo.digit.org` |
-| `USERNAME` | API username | `LNMZ` |
+| `USERNAME` | API username | `Shreya` |
 | `PASSWORD` | API password | `eGov@1234` |
 | `TENANTID` | Tenant identifier | `mz` |
 | `LOCALE` | Locale setting | `en_MZ` |
